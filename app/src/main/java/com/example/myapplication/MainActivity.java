@@ -8,6 +8,8 @@ import android.widget.Button;
 import android.widget.TextView;
 import androidx.appcompat.app.AppCompatActivity;
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import okhttp3.Call;
@@ -23,13 +25,16 @@ import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import org.tensorflow.lite.Interpreter;
-import org.tensorflow.lite.Tensor;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+
+
 
 
 public class MainActivity extends AppCompatActivity {
 
     private static final String TAG = "MainActivity";
-    private String modelUrl = "https://github.com/tensorflow/tflite-micro/raw/refs/heads/main/tensorflow/lite/micro/examples/micro_speech/models/micro_speech_quantized.tflite";
+    private String modelUrl = "https://github.com/MatheusDCasanova/OnDeviceTraning/raw/refs/heads/master/model.tflite";
     private String datasetUrl = "https://github.com/tensorflow/tflite-micro/raw/refs/heads/main/tensorflow/lite/micro/examples/micro_speech/models/micro_speech_quantized.tflite";
     private File modelFile;
     private byte[] modelData;
@@ -173,12 +178,56 @@ public class MainActivity extends AppCompatActivity {
         executor.submit(() -> {
             long startTime = System.currentTimeMillis();
             try {
+                // Carregar o modelo TFLite com funções exportadas
                 Interpreter tflite = new Interpreter(modelFile);
-                Log.d("DEBUG", Long.toString(modelFile.length()));
-                Log.d("DEBUG", Integer.toString(tflite.getInputTensorCount()));
-                Log.d("DEBUG", tflite.getInputTensor(0).toString());
-                Thread.sleep(5000);
-            } catch (InterruptedException | IllegalArgumentException e) {
+
+                // Preparar dados de entrada (x com shape: [1, 4] e y com shape: [1, 3])
+                float[][] inputData = new float[1][4];
+                inputData[0] = new float[]{0, 1, 2, 3};  // Exemplo de entrada
+
+                float[][] labels = new float[1][3];
+                labels[0] = new float[]{3, 0, 1};  // Exemplo de labels (target)
+
+                // Alocar buffers de entrada e labels
+                ByteBuffer inputBuffer = ByteBuffer.allocateDirect(4 * 4);
+                inputBuffer.order(ByteOrder.nativeOrder());
+                for (int i = 0; i < 4; i++) {
+                    inputBuffer.putFloat(inputData[0][i]);
+                }
+
+                ByteBuffer labelBuffer = ByteBuffer.allocateDirect(3 * 4);
+                labelBuffer.order(ByteOrder.nativeOrder());
+                for (int i = 0; i < 3; i++) {
+                    labelBuffer.putFloat(labels[0][i]);
+                }
+                Log.d("DEBUG", "Created input and label");
+
+                // Configurar inputs para a função train
+                Map<String, Object> inputs = new HashMap<>();
+                inputs.put("x", inputBuffer);
+                inputs.put("y", labelBuffer);
+
+                Log.d("DEBUG", "Created inputs");
+
+                // Criar buffer para armazenar a saída (perda do treino)
+                Map<String, Object> outputs = new HashMap<>();
+                ByteBuffer lossBuffer = ByteBuffer.allocateDirect(4);
+                lossBuffer.order(ByteOrder.nativeOrder());
+                outputs.put("loss", lossBuffer);
+                Log.d("DEBUG", "Created outputs");
+
+                // Executar o treinamento
+                tflite.runSignature(inputs, outputs, "train");
+
+                Log.d("DEBUG", "Trained");
+
+                // Obter o valor da perda (loss) da saída
+                lossBuffer.rewind();
+                float loss = lossBuffer.getFloat();
+                Log.d("DEBUG", "Training loss: " + loss);
+
+            } catch (Exception e) {
+                Log.d("DEBUG", "Error");
                 e.printStackTrace();
             } finally {
                 long trainingTime = System.currentTimeMillis() - startTime;
