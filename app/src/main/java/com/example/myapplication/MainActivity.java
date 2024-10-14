@@ -6,45 +6,54 @@ import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
+
 import androidx.appcompat.app.AppCompatActivity;
+
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+
 import okhttp3.Call;
 import okhttp3.Callback;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
+
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.widget.ProgressBar;
+
 import java.io.ByteArrayOutputStream;
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileOutputStream;
+
 import org.tensorflow.lite.Interpreter;
+import org.tensorflow.lite.gpu.GpuDelegate;
+
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-
-
 
 
 public class MainActivity extends AppCompatActivity {
 
     private static final String TAG = "MainActivity";
     private String modelUrl = "https://github.com/MatheusDCasanova/OnDeviceTraning/raw/refs/heads/master/model.tflite";
-    private String datasetUrl = "https://github.com/tensorflow/tflite-micro/raw/refs/heads/main/tensorflow/lite/micro/examples/micro_speech/models/micro_speech_quantized.tflite";
+    private String featuresUrl = "https://github.com/MatheusDCasanova/OnDeviceTraning/raw/refs/heads/master/features.bin";
+    private String labelsUrl= "https://github.com/MatheusDCasanova/OnDeviceTraning/raw/refs/heads/master/labels.bin";
     private File modelFile;
-    private byte[] modelData;
-    private byte[] datasetData;
+    private ByteBuffer featuresBuffer;
+    private ByteBuffer labelsBuffer;
+
     private TextView tvStatus;
 
     private Button btnSelectModel, btnSelectDataset, btnStartTraining;
     private ProgressBar progressBar;
 
     private ProgressBar downloadProgressBar;
+
 
 
     @SuppressLint("SetTextI18n")
@@ -64,16 +73,18 @@ public class MainActivity extends AppCompatActivity {
 
         btnSelectModel.setOnClickListener(v -> {
             // Download model from URL
-            downloadFile(modelUrl, true);
+            modelFile = new File(getFilesDir(), "model.tflite");
+            downloadFile(modelUrl, "Model", true, modelFile);
         });
 
         btnSelectDataset.setOnClickListener(v -> {
             // Download dataset from URL
-            downloadFile(datasetUrl, false);
+            downloadFile(featuresUrl, "Features", false, null);
+            downloadFile(labelsUrl, "Labels", false, null);
         });
 
         btnStartTraining.setOnClickListener(v -> {
-            if (modelFile != null && datasetData != null) {
+            if (modelFile != null && featuresBuffer != null && labelsBuffer != null) {
                 startTraining();
             } else {
                 tvStatus.setText("Please download both model and dataset");
@@ -94,8 +105,8 @@ public class MainActivity extends AppCompatActivity {
         btnStartTraining.startAnimation(scaleUp);
     }
 
-    private void downloadFile(String url, boolean isModel) {
-        tvStatus.setText("Downloading " + (isModel ? "Model" : "Dataset") + "...");
+    private void downloadFile(String url, String fileType, boolean isModel, File saveFile) {
+        tvStatus.setText("Downloading " + fileType + "...");
         downloadProgressBar.setVisibility(View.VISIBLE);
         downloadProgressBar.setProgress(0);
 
@@ -106,9 +117,9 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onFailure(Call call, IOException e) {
                 runOnUiThread(() -> {
-                    tvStatus.setText("Download Failed: " + e.getMessage());
+                    tvStatus.setText(fileType + " Download Failed: " + e.getMessage());
                     downloadProgressBar.setVisibility(View.GONE);
-                    Log.e(TAG, "Download failed", e);
+                    Log.e(TAG, fileType + " download failed", e);
                 });
             }
 
@@ -116,7 +127,7 @@ public class MainActivity extends AppCompatActivity {
             public void onResponse(Call call, Response response) throws IOException {
                 if (!response.isSuccessful()) {
                     runOnUiThread(() -> {
-                        tvStatus.setText("Download Failed: " + response.message());
+                        tvStatus.setText(fileType + " Download Failed: " + response.message());
                         downloadProgressBar.setVisibility(View.GONE);
                     });
                     return;
@@ -124,44 +135,50 @@ public class MainActivity extends AppCompatActivity {
 
                 long totalBytes = response.body().contentLength();
                 long downloadedBytes = 0;
-                byte[] fileData = new byte[80000];
-                try (BufferedInputStream inputStream = new BufferedInputStream(response.body().byteStream())) {
-                    if (isModel) {
-                        // Salvar o modelo como um arquivo .tflite
-                        modelFile = new File(getFilesDir(), "model.tflite");
-                        Log.d("tag", modelFile.getAbsolutePath());
-                        try (FileOutputStream fos = new FileOutputStream(modelFile)) {
-                            int read;
-                            while ((read = inputStream.read(fileData, 0, fileData.length)) != -1) {
-                                fos.write(fileData, 0, read);
-                                downloadedBytes += read;
+                byte[] buffer = new byte[80000];
+                ByteArrayOutputStream byteStream = new ByteArrayOutputStream();
 
-                                // Atualizar progresso
-                                int progress = (int) ((downloadedBytes * 100) / totalBytes);
-                                runOnUiThread(() -> downloadProgressBar.setProgress(progress));
-                            }
+                try (BufferedInputStream inputStream = new BufferedInputStream(response.body().byteStream())) {
+                    int read;
+                    while ((read = inputStream.read(buffer, 0, buffer.length)) != -1) {
+                        byteStream.write(buffer, 0, read);
+                        downloadedBytes += read;
+
+                        Log.d("DownloadInfo", fileType + " Bytes read: " + downloadedBytes + "/" + totalBytes);
+
+                        // Update progress
+                        int progress = (int) ((downloadedBytes * 100) / totalBytes);
+                        runOnUiThread(() -> downloadProgressBar.setProgress(progress));
+                    }
+                    byteStream.flush();
+                    byte[] data = byteStream.toByteArray();
+
+                    // For model files, save to disk
+                    if (isModel && saveFile != null) {
+                        try (FileOutputStream fos = new FileOutputStream(saveFile)) {
+                            fos.write(data);
                             fos.flush();
-                            runOnUiThread(() -> tvStatus.setText("Model Downloaded"));
+                            runOnUiThread(() -> tvStatus.setText(fileType + " Downloaded"));
                         } catch (IOException e) {
-                            runOnUiThread(() -> tvStatus.setText("Error saving model: " + e.getMessage()));
+                            runOnUiThread(() -> tvStatus.setText("Error saving " + fileType + ": " + e.getMessage()));
                         }
-                    } else {
-                        // Lógica para salvar dataset
-                        ByteArrayOutputStream byteBuffer = new ByteArrayOutputStream();
-                        int read;
-                        while ((read = inputStream.read(fileData, 0, fileData.length)) != -1) {
-                            byteBuffer.write(fileData, 0, read);
-                            downloadedBytes += read;
-                            int progress = (int) ((downloadedBytes * 100) / totalBytes);
-                            runOnUiThread(() -> downloadProgressBar.setProgress(progress));
+                    } else if (!isModel) {
+                        // For datasets, wrap into ByteBuffer
+                        ByteBuffer datasetBuffer = ByteBuffer.wrap(data);
+                        datasetBuffer.order(ByteOrder.nativeOrder());
+                        runOnUiThread(() -> tvStatus.setText(fileType + " Downloaded"));
+
+                        if (fileType.equals("Features")) {
+                            featuresBuffer = datasetBuffer;
+                            Log.d("Size", fileType + " " + featuresBuffer.capacity());
+                        } else {
+                            labelsBuffer = datasetBuffer;
+                            Log.d("Size", fileType + " " + labelsBuffer.capacity());
                         }
-                        byteBuffer.flush();
-                        datasetData = byteBuffer.toByteArray();
-                        runOnUiThread(() -> tvStatus.setText("Dataset Downloaded"));
                     }
                 } catch (IOException e) {
                     runOnUiThread(() -> {
-                        tvStatus.setText("Error reading data: " + e.getMessage());
+                        tvStatus.setText("Error reading " + fileType + ": " + e.getMessage());
                     });
                 } finally {
                     runOnUiThread(() -> downloadProgressBar.setVisibility(View.GONE));
@@ -171,6 +188,11 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void startTraining() {
+        if (featuresBuffer == null || labelsBuffer == null) {
+            tvStatus.setText("Please download both features and labels");
+            return;
+        }
+
         tvStatus.setText("Training Started...");
         progressBar.setVisibility(View.VISIBLE);
 
@@ -178,57 +200,41 @@ public class MainActivity extends AppCompatActivity {
         executor.submit(() -> {
             long startTime = System.currentTimeMillis();
             try {
-                // Carregar o modelo TFLite com funções exportadas
-                Interpreter tflite = new Interpreter(modelFile);
 
-                // Preparar dados de entrada (x com shape: [1, 4] e y com shape: [1, 3])
-                float[][] inputData = new float[1][4];
-                inputData[0] = new float[]{0, 1, 2, 3};  // Exemplo de entrada
+                Interpreter tflite;
 
-                float[][] labels = new float[1][3];
-                labels[0] = new float[]{3, 0, 1};  // Exemplo de labels (target)
-
-                // Alocar buffers de entrada e labels
-                ByteBuffer inputBuffer = ByteBuffer.allocateDirect(4 * 4);
-                inputBuffer.order(ByteOrder.nativeOrder());
-                for (int i = 0; i < 4; i++) {
-                    inputBuffer.putFloat(inputData[0][i]);
+                try {
+                    Interpreter.Options options = new Interpreter.Options();
+                    options.setUseNNAPI(true);
+                    tflite = new Interpreter(modelFile, options);
+                } catch (IllegalArgumentException e) {
+                    Log.e("Interpreter", "GPU Delegate failed, falling back to CPU.", e);
+                    tflite = new Interpreter(modelFile);  // Fallback to CPU
                 }
 
-                ByteBuffer labelBuffer = ByteBuffer.allocateDirect(3 * 4);
-                labelBuffer.order(ByteOrder.nativeOrder());
-                for (int i = 0; i < 3; i++) {
-                    labelBuffer.putFloat(labels[0][i]);
-                }
-                Log.d("DEBUG", "Created input and label");
+                // Prepare the output buffer (e.g., loss)
+                ByteBuffer outputBuffer = ByteBuffer.allocateDirect(4);
+                outputBuffer.order(ByteOrder.nativeOrder());
 
-                // Configurar inputs para a função train
+                // Combine features and labels into inputs map
                 Map<String, Object> inputs = new HashMap<>();
-                inputs.put("x", inputBuffer);
-                inputs.put("y", labelBuffer);
+                inputs.put("x", featuresBuffer);
+                inputs.put("y", labelsBuffer);
 
-                Log.d("DEBUG", "Created inputs");
-
-                // Criar buffer para armazenar a saída (perda do treino)
+                // Output map to hold loss
                 Map<String, Object> outputs = new HashMap<>();
-                ByteBuffer lossBuffer = ByteBuffer.allocateDirect(4);
-                lossBuffer.order(ByteOrder.nativeOrder());
-                outputs.put("loss", lossBuffer);
-                Log.d("DEBUG", "Created outputs");
+                outputs.put("loss", outputBuffer);
 
-                // Executar o treinamento
+                // Run the model with the training signature
                 tflite.runSignature(inputs, outputs, "train");
 
-                Log.d("DEBUG", "Trained");
-
-                // Obter o valor da perda (loss) da saída
-                lossBuffer.rewind();
-                float loss = lossBuffer.getFloat();
-                Log.d("DEBUG", "Training loss: " + loss);
+                // Retrieve and log the output (e.g., loss)
+                outputBuffer.rewind();
+                float loss = outputBuffer.getFloat();
+                Log.d(TAG, "Training loss: " + loss);
 
             } catch (Exception e) {
-                Log.d("DEBUG", "Error");
-                e.printStackTrace();
+                Log.e(TAG, "Error during training", e);
             } finally {
                 long trainingTime = System.currentTimeMillis() - startTime;
                 runOnUiThread(() -> {
