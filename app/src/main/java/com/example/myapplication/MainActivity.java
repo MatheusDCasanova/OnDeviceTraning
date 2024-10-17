@@ -40,8 +40,8 @@ import java.nio.ByteOrder;
 public class MainActivity extends AppCompatActivity {
 
     private static final String TAG = "MainActivity";
-    private String modelUrl = "https://github.com/MatheusDCasanova/OnDeviceTraning/raw/refs/heads/master/model.tflite";
-    private String featuresUrl = "https://github.com/MatheusDCasanova/OnDeviceTraning/raw/refs/heads/master/features.bin";
+    private String modelUrl = "https://github.com/MatheusDCasanova/OnDeviceTraning/raw/refs/heads/master/model2d.tflite";
+    private String featuresUrl = "https://github.com/MatheusDCasanova/OnDeviceTraning/raw/refs/heads/master/features2d.bin";
     private String labelsUrl= "https://github.com/MatheusDCasanova/OnDeviceTraning/raw/refs/heads/master/labels.bin";
     private File modelFile;
     private ByteBuffer featuresBuffer;
@@ -227,6 +227,9 @@ public class MainActivity extends AppCompatActivity {
 
                 // Run the model with the training signature
                 tflite.runSignature(inputs, outputs, "train");
+
+                featuresBuffer.rewind();
+                labelsBuffer.rewind();
 
                 // Retrieve and log the output (e.g., loss)
                 outputBuffer.rewind();
