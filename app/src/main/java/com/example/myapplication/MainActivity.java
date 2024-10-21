@@ -10,6 +10,7 @@ import android.widget.TextView;
 import androidx.appcompat.app.AppCompatActivity;
 
 import java.io.IOException;
+import java.nio.FloatBuffer;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
@@ -40,12 +41,12 @@ import java.nio.ByteOrder;
 public class MainActivity extends AppCompatActivity {
 
     private static final String TAG = "MainActivity";
-    private String modelUrl = "https://github.com/MatheusDCasanova/OnDeviceTraning/raw/refs/heads/master/model2d.tflite";
-    private String featuresUrl = "https://github.com/MatheusDCasanova/OnDeviceTraning/raw/refs/heads/master/features2d.bin";
-    private String labelsUrl= "https://github.com/MatheusDCasanova/OnDeviceTraning/raw/refs/heads/master/labels.bin";
+    private String modelUrl = "https://github.com/MatheusDCasanova/OnDeviceTraning/raw/refs/heads/master/model_mnist.tflite";
+    private String featuresUrl = "https://github.com/MatheusDCasanova/OnDeviceTraning/raw/refs/heads/master/mnist_sample_feat.bin";
+    private String labelsUrl= "https://github.com/MatheusDCasanova/OnDeviceTraning/raw/refs/heads/master/mnist_sample_label.bin";
     private File modelFile;
-    private ByteBuffer featuresBuffer;
-    private ByteBuffer labelsBuffer;
+    private FloatBuffer featuresBuffer;
+    private FloatBuffer labelsBuffer;
 
     private TextView tvStatus;
 
@@ -169,10 +170,10 @@ public class MainActivity extends AppCompatActivity {
                         runOnUiThread(() -> tvStatus.setText(fileType + " Downloaded"));
 
                         if (fileType.equals("Features")) {
-                            featuresBuffer = datasetBuffer;
+                            featuresBuffer = datasetBuffer.asFloatBuffer();
                             Log.d("Size", fileType + " " + featuresBuffer.capacity());
                         } else {
-                            labelsBuffer = datasetBuffer;
+                            labelsBuffer = datasetBuffer.asFloatBuffer();
                             Log.d("Size", fileType + " " + labelsBuffer.capacity());
                         }
                     }
@@ -212,29 +213,47 @@ public class MainActivity extends AppCompatActivity {
                     tflite = new Interpreter(modelFile);  // Fallback to CPU
                 }
 
-                // Prepare the output buffer (e.g., loss)
-                ByteBuffer outputBuffer = ByteBuffer.allocateDirect(4);
-                outputBuffer.order(ByteOrder.nativeOrder());
-
                 // Combine features and labels into inputs map
                 Map<String, Object> inputs = new HashMap<>();
                 inputs.put("x", featuresBuffer);
-                inputs.put("y", labelsBuffer);
+                //inputs.put("y", labelsBuffer);
+
+                for (int j = 0; j < 28*28; j += 1) {
+                    Log.d(TAG, "Features: " + featuresBuffer.get(j));
+                }
+
+                // Prepare the output buffer (e.g., loss)
+                ByteBuffer outputBuffer = ByteBuffer.allocateDirect(10*4);
+                outputBuffer.order(ByteOrder.nativeOrder());
+
+                FloatBuffer floatOutputBuffer = outputBuffer.asFloatBuffer();
 
                 // Output map to hold loss
                 Map<String, Object> outputs = new HashMap<>();
-                outputs.put("loss", outputBuffer);
+                //outputs.put("loss", outputBuffer);
+                outputs.put("output", outputBuffer);
+
 
                 // Run the model with the training signature
-                tflite.runSignature(inputs, outputs, "train");
+                // tflite.runSignature(inputs, outputs, "train");
+
+                tflite.runSignature(inputs, outputs, "infer");
 
                 featuresBuffer.rewind();
                 labelsBuffer.rewind();
+                floatOutputBuffer.rewind();
+
+                // Process the result to get the final category values.
+                for (int j = 0; j < 10; j += 1) {
+                    Log.d(TAG, "Inference: " + floatOutputBuffer.get(j));
+                }
 
                 // Retrieve and log the output (e.g., loss)
                 outputBuffer.rewind();
-                float loss = outputBuffer.getFloat();
-                Log.d(TAG, "Training loss: " + loss);
+
+
+                //float loss = outputBuffer.getFloat();
+                //Log.d(TAG, "Training loss: " + loss);
 
             } catch (Exception e) {
                 Log.e(TAG, "Error during training", e);
