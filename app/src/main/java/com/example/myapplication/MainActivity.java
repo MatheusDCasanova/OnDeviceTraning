@@ -1,12 +1,20 @@
 package com.example.myapplication;
 
 import android.annotation.SuppressLint;
+import android.graphics.Color;
+import android.graphics.drawable.GradientDrawable;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.EditText;
+import android.widget.LinearLayout;
+import android.widget.NumberPicker;
+import android.widget.Spinner;
 import android.widget.TextView;
 
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
 import java.io.IOException;
@@ -50,9 +58,12 @@ public class MainActivity extends AppCompatActivity {
 
     private TextView tvStatus;
 
-    private Button btnSelectModel, btnSelectDataset, btnStartTraining;
+    private Button btnSelectModel, btnSelectDataset, btnStartTraining, btnConfigurations;
     private ProgressBar progressBar;
 
+    int batchSize = 32;
+    int dimension = 784;
+    int numBatches = 1;
     private ProgressBar downloadProgressBar;
 
 
@@ -66,6 +77,7 @@ public class MainActivity extends AppCompatActivity {
         btnSelectModel = findViewById(R.id.btn_select_model);
         btnSelectDataset = findViewById(R.id.btn_select_dataset);
         btnStartTraining = findViewById(R.id.btn_start_training);
+        btnConfigurations = findViewById(R.id.btn_configurations);
         tvStatus = findViewById(R.id.tv_status);
         progressBar = findViewById(R.id.progressBar);
         downloadProgressBar = findViewById(R.id.downloadProgressBar);
@@ -91,6 +103,90 @@ public class MainActivity extends AppCompatActivity {
                 tvStatus.setText("Please download both model and dataset");
             }
         });
+
+        btnConfigurations.setOnClickListener(v -> {
+            // Download model from URL
+            showConfigurationsDialog();
+        });
+    }
+
+    private void showConfigurationsDialog() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Set Configuration");
+
+        // Create labels and EditTexts for numeric input
+        TextView batchLabel = new TextView(this);
+        batchLabel.setText("Batch Size:");
+        batchLabel.setTextSize(18);
+        batchLabel.setTextColor(Color.WHITE);
+        batchLabel.setPadding(0, 10, 0, 5);
+
+        EditText editTextBatch = createNumberInput(batchSize);
+
+        TextView dimensionLabel = new TextView(this);
+        dimensionLabel.setText("Feature Dimensions:");
+        dimensionLabel.setTextSize(18);
+        dimensionLabel.setTextColor(Color.WHITE);
+        dimensionLabel.setPadding(0, 10, 0, 5);
+
+        EditText editTextDimension = createNumberInput(dimension);
+
+        // Arrange labels and EditTexts vertically in a layout
+        LinearLayout layout = new LinearLayout(this);
+        layout.setOrientation(LinearLayout.VERTICAL);
+        layout.setPadding(20, 20, 20, 20);  // Add padding around the layout
+        layout.setElevation(10);  // Add elevation for shadow effect
+
+        // Add components to the layout
+        layout.addView(batchLabel);
+        layout.addView(editTextBatch);
+        layout.addView(dimensionLabel);
+        layout.addView(editTextDimension);
+
+        // Set layout to dialog builder
+        builder.setView(layout);
+
+        builder.setPositiveButton("OK", (dialog, which) -> {
+            batchSize = parseInteger(editTextBatch.getText().toString(), batchSize);
+            dimension = parseInteger(editTextDimension.getText().toString(), dimension);
+        });
+        builder.setNegativeButton("Cancel", (dialog, which) -> dialog.cancel());
+
+        builder.show();
+    }
+
+    // Helper method to create an EditText with number input type
+    private EditText createNumberInput(int initialValue) {
+        EditText editText = new EditText(this);
+        editText.setText(String.valueOf(initialValue));      // Set initial value
+        editText.setSelectAllOnFocus(true);                  // Auto-select text on focus for easy editing
+
+        // Set padding and background
+        editText.setPadding(20, 15, 20, 15);  // Add padding for better touch targets
+        editText.setLayoutParams(new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+        ));
+
+        // Add rounded corners using a shape drawable programmatically
+        GradientDrawable background = new GradientDrawable();
+        background.setColor(Color.WHITE);
+        background.setCornerRadius(10);
+        background.setStroke(1, Color.GRAY); // Border color
+        editText.setBackground(background);
+        editText.setTextColor(Color.BLUE);
+        editText.setHintTextColor(Color.GRAY);
+
+        return editText;
+    }
+
+    // Helper method to parse input text or fall back to a default value
+    private int parseInteger(String text, int defaultValue) {
+        try {
+            return Integer.parseInt(text);
+        } catch (NumberFormatException e) {
+            return defaultValue;  // Fallback to default if parsing fails
+        }
     }
 
     private void applyAnimations() {
