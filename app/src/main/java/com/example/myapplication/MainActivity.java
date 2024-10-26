@@ -63,6 +63,7 @@ public class MainActivity extends AppCompatActivity {
     private ProgressBar progressBar;
 
     int batchSize = 32;
+    int numbatches = 1;
     int dimension = 784;
     int numBatches = 1;
     private ProgressBar downloadProgressBar;
@@ -116,6 +117,15 @@ public class MainActivity extends AppCompatActivity {
         builder.setTitle("Set Configuration");
 
         // Create labels and EditTexts for numeric input
+        TextView nbatches = new TextView(this);
+        nbatches.setText("Number of batches:");
+        nbatches.setTextSize(18);
+        nbatches.setTextColor(Color.WHITE);
+        nbatches.setPadding(0, 10, 0, 5);
+
+        EditText editTextNBatches = createNumberInput(numbatches);
+
+        // Create labels and EditTexts for numeric input
         TextView batchLabel = new TextView(this);
         batchLabel.setText("Batch Size:");
         batchLabel.setTextSize(18);
@@ -139,6 +149,8 @@ public class MainActivity extends AppCompatActivity {
         layout.setElevation(10);  // Add elevation for shadow effect
 
         // Add components to the layout
+        layout.addView(nbatches);
+        layout.addView(editTextNBatches);
         layout.addView(batchLabel);
         layout.addView(editTextBatch);
         layout.addView(dimensionLabel);
