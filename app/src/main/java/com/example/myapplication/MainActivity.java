@@ -6,17 +6,17 @@ import android.graphics.drawable.GradientDrawable;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
-import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.LinearLayout;
-import android.widget.NumberPicker;
-import android.widget.Spinner;
 import android.widget.TextView;
 
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
 
 import java.io.IOException;
 import java.nio.FloatBuffer;
@@ -41,7 +41,6 @@ import java.io.File;
 import java.io.FileOutputStream;
 
 import org.tensorflow.lite.Interpreter;
-import org.tensorflow.lite.gpu.GpuDelegate;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -64,7 +63,7 @@ public class MainActivity extends AppCompatActivity {
 
     int batchSize = 32;
     int numbatches = 1;
-    int dimension = 784;
+    List<Integer> dimensions = List.of(784);
     int numBatches = 1;
     private ProgressBar downloadProgressBar;
 
@@ -140,7 +139,7 @@ public class MainActivity extends AppCompatActivity {
         dimensionLabel.setTextColor(Color.WHITE);
         dimensionLabel.setPadding(0, 10, 0, 5);
 
-        EditText editTextDimension = createNumberInput(dimension);
+        EditText editTextDimension = createNumberListInput(dimensions);
 
         // Arrange labels and EditTexts vertically in a layout
         LinearLayout layout = new LinearLayout(this);
@@ -161,7 +160,7 @@ public class MainActivity extends AppCompatActivity {
 
         builder.setPositiveButton("OK", (dialog, which) -> {
             batchSize = parseInteger(editTextBatch.getText().toString(), batchSize);
-            dimension = parseInteger(editTextDimension.getText().toString(), dimension);
+            dimensions = parseIntegerList(editTextDimension.getText().toString(), dimensions);
         });
         builder.setNegativeButton("Cancel", (dialog, which) -> dialog.cancel());
 
@@ -169,7 +168,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     // Helper method to create an EditText with number input type
-    private EditText createNumberInput(int initialValue) {
+    private EditText createNumberInput(Integer initialValue) {
         EditText editText = new EditText(this);
         editText.setText(String.valueOf(initialValue));      // Set initial value
         editText.setSelectAllOnFocus(true);                  // Auto-select text on focus for easy editing
@@ -193,10 +192,42 @@ public class MainActivity extends AppCompatActivity {
         return editText;
     }
 
+    private EditText createNumberListInput(List<Integer> initialValue) {
+        EditText editText = new EditText(this);
+        editText.setText(listToString(initialValue));
+        editText.setSelectAllOnFocus(true);
+
+        // Set padding and background
+        editText.setPadding(20, 15, 20, 15);
+        editText.setLayoutParams(new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+        ));
+
+        // Add rounded corners using a shape drawable programmatically
+        GradientDrawable background = new GradientDrawable();
+        background.setColor(Color.WHITE);
+        background.setCornerRadius(10);
+        background.setStroke(1, Color.GRAY); // Border color
+        editText.setBackground(background);
+        editText.setTextColor(Color.BLUE);
+        editText.setHintTextColor(Color.GRAY);
+
+        return editText;
+    }
+
     // Helper method to parse input text or fall back to a default value
     private int parseInteger(String text, int defaultValue) {
         try {
             return Integer.parseInt(text);
+        } catch (NumberFormatException e) {
+            return defaultValue;  // Fallback to default if parsing fails
+        }
+    }
+
+    private List<Integer> parseIntegerList(String text, List<Integer> defaultValue) {
+        try {
+            return stringToList(text);
         } catch (NumberFormatException e) {
             return defaultValue;  // Fallback to default if parsing fails
         }
@@ -296,6 +327,20 @@ public class MainActivity extends AppCompatActivity {
             }
         });
     }
+
+    private String listToString(List<Integer> numberList) {
+        return numberList.stream()
+                .map(String::valueOf)
+                .collect(Collectors.joining(", "));
+    }
+
+    private List<Integer> stringToList(String numbers) {
+        return Arrays.stream(numbers.split(","))
+                .map(String::trim)
+                .map(Integer::parseInt)
+                .collect(Collectors.toList());
+    }
+
 
     private void startTraining() {
         if (featuresBuffer == null || labelsBuffer == null) {
