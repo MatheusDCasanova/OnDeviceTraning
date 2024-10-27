@@ -45,6 +45,8 @@ import org.tensorflow.lite.Interpreter;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
+import java.util.ArrayList;
+
 
 public class MainActivity extends AppCompatActivity {
 
@@ -60,11 +62,12 @@ public class MainActivity extends AppCompatActivity {
 
     private Button btnSelectModel, btnSelectDataset, btnStartTraining, btnConfigurations;
     private ProgressBar progressBar;
+    List<Integer> dimensions = List.of(10000);
+    private int BATCH_SIZE = 64;
+    private int NUM_BATCHES = 100;
 
-    int batchSize = 32;
-    int numbatches = 1;
-    List<Integer> dimensions = List.of(784);
-    int numBatches = 1;
+    private int NUM_EPOCHS = 1;
+
     private ProgressBar downloadProgressBar;
 
 
@@ -116,13 +119,22 @@ public class MainActivity extends AppCompatActivity {
         builder.setTitle("Set Configuration");
 
         // Create labels and EditTexts for numeric input
-        TextView nbatches = new TextView(this);
-        nbatches.setText("Number of batches:");
-        nbatches.setTextSize(18);
-        nbatches.setTextColor(Color.WHITE);
-        nbatches.setPadding(0, 10, 0, 5);
+        TextView nepochsLabel = new TextView(this);
+        nepochsLabel.setText("Number of epochs:");
+        nepochsLabel.setTextSize(18);
+        nepochsLabel.setTextColor(Color.WHITE);
+        nepochsLabel.setPadding(0, 10, 0, 5);
 
-        EditText editTextNBatches = createNumberInput(numbatches);
+        EditText editTextNEpochs = createNumberInput(NUM_EPOCHS);
+
+        // Create labels and EditTexts for numeric input
+        TextView nbatchesLabel = new TextView(this);
+        nbatchesLabel.setText("Number of batches:");
+        nbatchesLabel.setTextSize(18);
+        nbatchesLabel.setTextColor(Color.WHITE);
+        nbatchesLabel.setPadding(0, 10, 0, 5);
+
+        EditText editTextNBatches = createNumberInput(NUM_BATCHES);
 
         // Create labels and EditTexts for numeric input
         TextView batchLabel = new TextView(this);
@@ -131,7 +143,7 @@ public class MainActivity extends AppCompatActivity {
         batchLabel.setTextColor(Color.WHITE);
         batchLabel.setPadding(0, 10, 0, 5);
 
-        EditText editTextBatch = createNumberInput(batchSize);
+        EditText editTextBatch = createNumberInput(BATCH_SIZE);
 
         TextView dimensionLabel = new TextView(this);
         dimensionLabel.setText("Feature Dimensions:");
@@ -141,6 +153,7 @@ public class MainActivity extends AppCompatActivity {
 
         EditText editTextDimension = createNumberListInput(dimensions);
 
+
         // Arrange labels and EditTexts vertically in a layout
         LinearLayout layout = new LinearLayout(this);
         layout.setOrientation(LinearLayout.VERTICAL);
@@ -148,7 +161,9 @@ public class MainActivity extends AppCompatActivity {
         layout.setElevation(10);  // Add elevation for shadow effect
 
         // Add components to the layout
-        layout.addView(nbatches);
+        layout.addView(nepochsLabel);
+        layout.addView(editTextNEpochs);
+        layout.addView(nbatchesLabel);
         layout.addView(editTextNBatches);
         layout.addView(batchLabel);
         layout.addView(editTextBatch);
@@ -159,9 +174,12 @@ public class MainActivity extends AppCompatActivity {
         builder.setView(layout);
 
         builder.setPositiveButton("OK", (dialog, which) -> {
-            batchSize = parseInteger(editTextBatch.getText().toString(), batchSize);
+            NUM_EPOCHS = parseInteger(editTextNEpochs.getText().toString(), NUM_EPOCHS);
+            NUM_BATCHES = parseInteger(editTextNBatches.getText().toString(), NUM_BATCHES);
+            BATCH_SIZE = parseInteger(editTextBatch.getText().toString(), BATCH_SIZE);
             dimensions = parseIntegerList(editTextDimension.getText().toString(), dimensions);
         });
+
         builder.setNegativeButton("Cancel", (dialog, which) -> dialog.cancel());
 
         builder.show();
@@ -331,7 +349,7 @@ public class MainActivity extends AppCompatActivity {
     private String listToString(List<Integer> numberList) {
         return numberList.stream()
                 .map(String::valueOf)
-                .collect(Collectors.joining(", "));
+                .collect(Collectors.joining(","));
     }
 
     private List<Integer> stringToList(String numbers) {
@@ -356,58 +374,85 @@ public class MainActivity extends AppCompatActivity {
             long startTime = System.currentTimeMillis();
             try {
 
-                Interpreter tflite;
+                Interpreter tfliteInterpreter;
 
                 try {
                     Interpreter.Options options = new Interpreter.Options();
                     options.setUseNNAPI(true);
-                    tflite = new Interpreter(modelFile, options);
+                    tfliteInterpreter = new Interpreter(modelFile, options);
                 } catch (IllegalArgumentException e) {
                     Log.e("Interpreter", "GPU Delegate failed, falling back to CPU.", e);
-                    tflite = new Interpreter(modelFile);  // Fallback to CPU
+                    tfliteInterpreter = new Interpreter(modelFile);  // Fallback to CPU
                 }
 
-                // Combine features and labels into inputs map
-                Map<String, Object> inputs = new HashMap<>();
-                inputs.put("x", featuresBuffer);
-                //inputs.put("y", labelsBuffer);
+                List<FloatBuffer> trainImageBatches = new ArrayList<>(NUM_BATCHES);
+                List<FloatBuffer> trainLabelBatches = new ArrayList<>(NUM_BATCHES);
 
-                for (int j = 0; j < 28*28; j += 1) {
-                    Log.d(TAG, "Features: " + featuresBuffer.get(j));
+                int FLATTENED_FEATURES_SIZE = 1;
+                for (int dimension : dimensions){
+                    FLATTENED_FEATURES_SIZE *= dimension;
                 }
 
-                // Prepare the output buffer (e.g., loss)
-                ByteBuffer outputBuffer = ByteBuffer.allocateDirect(10*4);
-                outputBuffer.order(ByteOrder.nativeOrder());
+                int LABELS_SIZE = tfliteInterpreter.getOutputTensor(0).numBytes();
 
-                FloatBuffer floatOutputBuffer = outputBuffer.asFloatBuffer();
+                // Prepare training batches.
+                for (int i = 0; i < NUM_BATCHES; ++i) {
+                    ByteBuffer  trainImages = ByteBuffer.allocateDirect(BATCH_SIZE * FLATTENED_FEATURES_SIZE).order(ByteOrder.nativeOrder());
+                    FloatBuffer trainFeaturesFloat = trainImages.asFloatBuffer();
+                    ByteBuffer trainLabels = ByteBuffer.allocateDirect(BATCH_SIZE * LABELS_SIZE).order(ByteOrder.nativeOrder());
+                    FloatBuffer trainLabelsFloat = trainLabels.asFloatBuffer();
 
-                // Output map to hold loss
-                Map<String, Object> outputs = new HashMap<>();
-                //outputs.put("loss", outputBuffer);
-                outputs.put("output", outputBuffer);
+                    // Slice the required portion from featuresBuffer for this batch
+                    int features_start = i * BATCH_SIZE * FLATTENED_FEATURES_SIZE;
+                    int features_end = features_start + BATCH_SIZE * FLATTENED_FEATURES_SIZE;
+                    FloatBuffer featuresBatchSlice = featuresBuffer.duplicate();  // Duplicate to avoid modifying original buffer position
+                    featuresBatchSlice.position(features_start);
+                    featuresBatchSlice.limit(features_end);
 
+                    Log.e("FEATURES", "Features start: " + features_start + ",  Features end:" + features_end);
 
-                // Run the model with the training signature
-                // tflite.runSignature(inputs, outputs, "train");
+                    // Copy the sliced data to trainFeaturesFloat
+                    trainFeaturesFloat.put(featuresBatchSlice);
 
-                tflite.runSignature(inputs, outputs, "infer");
+                    int labels_start = i * BATCH_SIZE * LABELS_SIZE;
+                    int labels_end = labels_start + BATCH_SIZE * LABELS_SIZE;
+                    FloatBuffer labelsBatchSlice = featuresBuffer.duplicate();  // Duplicate to avoid modifying original buffer position
+                    labelsBatchSlice.position(labels_start);
+                    labelsBatchSlice.limit(labels_end);
 
-                featuresBuffer.rewind();
-                labelsBuffer.rewind();
-                floatOutputBuffer.rewind();
+                    Log.e("Labels", "Labels start: " + features_start + ",  Labels end:" + features_end);
 
-                // Process the result to get the final category values.
-                for (int j = 0; j < 10; j += 1) {
-                    Log.d(TAG, "Inference: " + floatOutputBuffer.get(j));
+                    // Copy the sliced data to trainLabelsFloat
+                    trainLabelsFloat.put(labelsBatchSlice);
+
+                    trainFeaturesFloat.clear();
+                    trainLabelsFloat.clear();
+
+                    trainImageBatches.add(trainFeaturesFloat);
+                    trainLabelBatches.add(trainLabelsFloat);
                 }
 
-                // Retrieve and log the output (e.g., loss)
-                outputBuffer.rewind();
+                // Run training for a few steps.
+                float[] losses = new float[NUM_EPOCHS];
+                for (int epoch = 0; epoch < NUM_EPOCHS; ++epoch) {
+                    FloatBuffer loss = FloatBuffer.allocate(4).put(1);
+                    for (int batchIdx = 0; batchIdx < NUM_BATCHES; ++batchIdx) {
+                        Map<String, Object> inputs = new HashMap<>();
+                        inputs.put("x", trainImageBatches.get(batchIdx));
+                        inputs.put("y", trainLabelBatches.get(batchIdx));
 
+                        Map<String, Object> outputs = new HashMap<>();
+                        loss = FloatBuffer.allocate(1);
+                        outputs.put("loss", loss);
 
-                //float loss = outputBuffer.getFloat();
-                //Log.d(TAG, "Training loss: " + loss);
+                        tfliteInterpreter.runSignature(inputs, outputs, "train");
+
+                        // Record the last loss.
+                        if (batchIdx == NUM_BATCHES - 1) losses[epoch] = loss.get(0);
+                    }
+
+                    System.out.println("Finished " + (epoch + 1) + " epochs, current loss: " + loss.get(0));
+                }
 
             } catch (Exception e) {
                 Log.e(TAG, "Error during training", e);
