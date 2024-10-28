@@ -51,9 +51,9 @@ import java.util.ArrayList;
 public class MainActivity extends AppCompatActivity {
 
     private static final String TAG = "MainActivity";
-    private String modelUrl = "https://github.com/MatheusDCasanova/OnDeviceTraning/raw/refs/heads/master/model_mnist.tflite";
-    private String featuresUrl = "https://github.com/MatheusDCasanova/OnDeviceTraning/raw/refs/heads/master/mnist_sample_feat.bin";
-    private String labelsUrl= "https://github.com/MatheusDCasanova/OnDeviceTraning/raw/refs/heads/master/mnist_sample_label.bin";
+    private String modelUrl = "https://github.com/MatheusDCasanova/OnDeviceTraning/raw/refs/heads/master/model_mnist_fixed_batch_size.tflite";
+    private String featuresUrl = "https://github.com/MatheusDCasanova/OnDeviceTraning/raw/refs/heads/master/mnist_feats.bin";
+    private String labelsUrl= "https://github.com/MatheusDCasanova/OnDeviceTraning/raw/refs/heads/master/mnist_labels.bin";
     private File modelFile;
     private FloatBuffer featuresBuffer;
     private FloatBuffer labelsBuffer;
@@ -393,13 +393,14 @@ public class MainActivity extends AppCompatActivity {
                     FLATTENED_FEATURES_SIZE *= dimension;
                 }
 
-                int LABELS_SIZE = tfliteInterpreter.getOutputTensor(0).numBytes();
+                int LABELS_SIZE = tfliteInterpreter.getOutputTensor(0).numBytes() / (4*BATCH_SIZE);
 
                 // Prepare training batches.
-                for (int i = 0; i < NUM_BATCHES; ++i) {
-                    ByteBuffer  trainImages = ByteBuffer.allocateDirect(BATCH_SIZE * FLATTENED_FEATURES_SIZE).order(ByteOrder.nativeOrder());
-                    FloatBuffer trainFeaturesFloat = trainImages.asFloatBuffer();
-                    ByteBuffer trainLabels = ByteBuffer.allocateDirect(BATCH_SIZE * LABELS_SIZE).order(ByteOrder.nativeOrder());
+                for (int i = 0; i < NUM_BATCHES; i++) {
+                    Log.d("I", "Counter: " + i);
+                    ByteBuffer  trainFeatures = ByteBuffer.allocateDirect(BATCH_SIZE * FLATTENED_FEATURES_SIZE * 4).order(ByteOrder.nativeOrder());
+                    FloatBuffer trainFeaturesFloat = trainFeatures.asFloatBuffer();
+                    ByteBuffer trainLabels = ByteBuffer.allocateDirect(BATCH_SIZE * LABELS_SIZE * 4).order(ByteOrder.nativeOrder());
                     FloatBuffer trainLabelsFloat = trainLabels.asFloatBuffer();
 
                     // Slice the required portion from featuresBuffer for this batch
@@ -409,18 +410,19 @@ public class MainActivity extends AppCompatActivity {
                     featuresBatchSlice.position(features_start);
                     featuresBatchSlice.limit(features_end);
 
-                    Log.e("FEATURES", "Features start: " + features_start + ",  Features end:" + features_end);
+                    Log.d("Features", "Features start: " + features_start + ",  Features end:" + features_end);
 
                     // Copy the sliced data to trainFeaturesFloat
                     trainFeaturesFloat.put(featuresBatchSlice);
 
                     int labels_start = i * BATCH_SIZE * LABELS_SIZE;
                     int labels_end = labels_start + BATCH_SIZE * LABELS_SIZE;
-                    FloatBuffer labelsBatchSlice = featuresBuffer.duplicate();  // Duplicate to avoid modifying original buffer position
+                    FloatBuffer labelsBatchSlice = labelsBuffer.duplicate();  // Duplicate to avoid modifying original buffer position
                     labelsBatchSlice.position(labels_start);
                     labelsBatchSlice.limit(labels_end);
 
-                    Log.e("Labels", "Labels start: " + features_start + ",  Labels end:" + features_end);
+                    Log.d("Labels", "Labels start: " + labels_start + ",  Labels end:" + labels_end);
+                    Log.d("Labels", "LABELS SIZE: " + LABELS_SIZE);
 
                     // Copy the sliced data to trainLabelsFloat
                     trainLabelsFloat.put(labelsBatchSlice);
@@ -434,6 +436,9 @@ public class MainActivity extends AppCompatActivity {
 
                 // Run training for a few steps.
                 float[] losses = new float[NUM_EPOCHS];
+
+                startTime = System.currentTimeMillis();
+
                 for (int epoch = 0; epoch < NUM_EPOCHS; ++epoch) {
                     FloatBuffer loss = FloatBuffer.allocate(4).put(1);
                     for (int batchIdx = 0; batchIdx < NUM_BATCHES; ++batchIdx) {
