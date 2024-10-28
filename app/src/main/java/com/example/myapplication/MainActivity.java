@@ -4,10 +4,13 @@ import android.annotation.SuppressLint;
 import android.graphics.Color;
 import android.graphics.drawable.GradientDrawable;
 import android.os.Bundle;
+import android.text.Html;
+import android.text.Spanned;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
@@ -34,6 +37,7 @@ import okhttp3.Response;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.widget.ProgressBar;
+import android.widget.Toast;
 
 import java.io.ByteArrayOutputStream;
 import java.io.BufferedInputStream;
@@ -59,8 +63,15 @@ public class MainActivity extends AppCompatActivity {
     private FloatBuffer labelsBuffer;
 
     private TextView tvStatus;
-
-    private Button btnSelectModel, btnSelectDataset, btnStartTraining, btnConfigurations;
+    private TextView tvConfigurations;
+    private Button btnConfigurations;
+    private ImageView checkmarkConfigurations;
+    private Button btnSelectModel;
+    private ImageView checkmarkSelectModel;
+    private Button btnSelectDataset;
+    private ImageView checkmarkSelectDataset;
+    private Button btnStartTraining;
+    private ImageView checkmarkStartTraining;
     private ProgressBar progressBar;
     List<Integer> dimensions = List.of(10000);
     private int BATCH_SIZE = 64;
@@ -78,178 +89,135 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        btnSelectModel = findViewById(R.id.btn_select_model);
-        btnSelectDataset = findViewById(R.id.btn_select_dataset);
-        btnStartTraining = findViewById(R.id.btn_start_training);
-        btnConfigurations = findViewById(R.id.btn_configurations);
-        tvStatus = findViewById(R.id.tv_status);
-        progressBar = findViewById(R.id.progressBar);
-        downloadProgressBar = findViewById(R.id.downloadProgressBar);
+        initViews();
 
         applyAnimations();
 
-        btnSelectModel.setOnClickListener(v -> {
-            // Download model from URL
-            modelFile = new File(getFilesDir(), "model.tflite");
-            downloadFile(modelUrl, "Model", true, modelFile);
-        });
+        btnSelectModel.setOnClickListener(v -> selectModel());
+        btnSelectDataset.setOnClickListener(v -> selectDataset());
+        btnStartTraining.setOnClickListener(v -> startTrainingIfReady());
+        btnConfigurations.setOnClickListener(v -> showConfigurationsDialog());
+    }
 
-        btnSelectDataset.setOnClickListener(v -> {
-            // Download dataset from URL
-            downloadFile(featuresUrl, "Features", false, null);
-            downloadFile(labelsUrl, "Labels", false, null);
-        });
+    private void initViews(){
+        btnConfigurations = findViewById(R.id.btn_configurations);
+        checkmarkConfigurations = findViewById(R.id.checkmark_configurations);
+        btnSelectModel = findViewById(R.id.btn_select_model);
+        checkmarkSelectModel = findViewById(R.id.checkmark_model);
+        btnSelectDataset = findViewById(R.id.btn_select_dataset);
+        checkmarkSelectDataset = findViewById(R.id.checkmark_dataset);
+        btnStartTraining = findViewById(R.id.btn_start_training);
+        checkmarkStartTraining = findViewById(R.id.checkmark_training);
+        tvStatus = findViewById(R.id.tv_status);
+        progressBar = findViewById(R.id.progressBar);
+        downloadProgressBar = findViewById(R.id.downloadProgressBar);
+        tvConfigurations = findViewById(R.id.tv_configurations);
+    }
 
-        btnStartTraining.setOnClickListener(v -> {
-            if (modelFile != null && featuresBuffer != null && labelsBuffer != null) {
-                startTraining();
-            } else {
-                tvStatus.setText("Please download both model and dataset");
-            }
-        });
+    private void startTrainingIfReady() {
+        if (modelFile != null && featuresBuffer != null && labelsBuffer != null) {
+            startTraining();
+        } else {
+            tvStatus.setText("Please download both model and dataset");
+        }
+    }
 
-        btnConfigurations.setOnClickListener(v -> {
-            // Download model from URL
-            showConfigurationsDialog();
-        });
+    private void selectDataset(){
+        // Download dataset from URL
+        downloadFile(featuresUrl, "Features", false, null);
+        downloadFile(labelsUrl, "Labels", false, null);
+    }
+
+    private void selectModel(){
+        // Download model from URL
+        modelFile = new File(getFilesDir(), "model.tflite");
+        downloadFile(modelUrl, "Model", true, modelFile);
     }
 
     private void showConfigurationsDialog() {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setTitle("Set Configuration");
+        LinearLayout layout = createConfigurationsLayout();
+        builder.setView(layout)
+                .setPositiveButton("OK", (dialog, which) -> {
+                    updateConfigurations(layout);
+                    checkmarkConfigurations.setVisibility(View.VISIBLE);
+                })
+                .setNegativeButton("Cancel", (dialog, which) -> dialog.cancel())
+                .show();
+    }
 
-        // Create labels and EditTexts for numeric input
-        TextView nepochsLabel = new TextView(this);
-        nepochsLabel.setText("Number of epochs:");
-        nepochsLabel.setTextSize(18);
-        nepochsLabel.setTextColor(Color.WHITE);
-        nepochsLabel.setPadding(0, 10, 0, 5);
-
-        EditText editTextNEpochs = createNumberInput(NUM_EPOCHS);
-
-        // Create labels and EditTexts for numeric input
-        TextView nbatchesLabel = new TextView(this);
-        nbatchesLabel.setText("Number of batches:");
-        nbatchesLabel.setTextSize(18);
-        nbatchesLabel.setTextColor(Color.WHITE);
-        nbatchesLabel.setPadding(0, 10, 0, 5);
-
-        EditText editTextNBatches = createNumberInput(NUM_BATCHES);
-
-        // Create labels and EditTexts for numeric input
-        TextView batchLabel = new TextView(this);
-        batchLabel.setText("Batch Size:");
-        batchLabel.setTextSize(18);
-        batchLabel.setTextColor(Color.WHITE);
-        batchLabel.setPadding(0, 10, 0, 5);
-
-        EditText editTextBatch = createNumberInput(BATCH_SIZE);
-
-        TextView dimensionLabel = new TextView(this);
-        dimensionLabel.setText("Feature Dimensions:");
-        dimensionLabel.setTextSize(18);
-        dimensionLabel.setTextColor(Color.WHITE);
-        dimensionLabel.setPadding(0, 10, 0, 5);
-
-        EditText editTextDimension = createNumberListInput(dimensions);
-
-
-        // Arrange labels and EditTexts vertically in a layout
+    private LinearLayout createConfigurationsLayout() {
         LinearLayout layout = new LinearLayout(this);
         layout.setOrientation(LinearLayout.VERTICAL);
-        layout.setPadding(20, 20, 20, 20);  // Add padding around the layout
-        layout.setElevation(10);  // Add elevation for shadow effect
+        layout.setPadding(20, 20, 20, 20);
 
-        // Add components to the layout
-        layout.addView(nepochsLabel);
-        layout.addView(editTextNEpochs);
-        layout.addView(nbatchesLabel);
-        layout.addView(editTextNBatches);
-        layout.addView(batchLabel);
-        layout.addView(editTextBatch);
-        layout.addView(dimensionLabel);
-        layout.addView(editTextDimension);
+        layout.addView(createLabel("Number of epochs:"));
+        layout.addView(createNumberInput(NUM_EPOCHS));
 
-        // Set layout to dialog builder
-        builder.setView(layout);
+        layout.addView(createLabel("Number of batches:"));
+        layout.addView(createNumberInput(NUM_BATCHES));
 
-        builder.setPositiveButton("OK", (dialog, which) -> {
-            NUM_EPOCHS = parseInteger(editTextNEpochs.getText().toString(), NUM_EPOCHS);
-            NUM_BATCHES = parseInteger(editTextNBatches.getText().toString(), NUM_BATCHES);
-            BATCH_SIZE = parseInteger(editTextBatch.getText().toString(), BATCH_SIZE);
-            dimensions = parseIntegerList(editTextDimension.getText().toString(), dimensions);
-        });
+        layout.addView(createLabel("Batch Size:"));
+        layout.addView(createNumberInput(BATCH_SIZE));
 
-        builder.setNegativeButton("Cancel", (dialog, which) -> dialog.cancel());
+        layout.addView(createLabel("Feature Dimensions:"));
+        layout.addView(createNumberInputList(dimensions));
 
-        builder.show();
+        return layout;
     }
 
-    // Helper method to create an EditText with number input type
-    private EditText createNumberInput(Integer initialValue) {
-        EditText editText = new EditText(this);
-        editText.setText(String.valueOf(initialValue));      // Set initial value
-        editText.setSelectAllOnFocus(true);                  // Auto-select text on focus for easy editing
-
-        // Set padding and background
-        editText.setPadding(20, 15, 20, 15);  // Add padding for better touch targets
-        editText.setLayoutParams(new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-        ));
-
-        // Add rounded corners using a shape drawable programmatically
-        GradientDrawable background = new GradientDrawable();
-        background.setColor(Color.WHITE);
-        background.setCornerRadius(10);
-        background.setStroke(1, Color.GRAY); // Border color
-        editText.setBackground(background);
-        editText.setTextColor(Color.BLUE);
-        editText.setHintTextColor(Color.GRAY);
-
-        return editText;
+    private TextView createLabel(String text) {
+        TextView label = new TextView(this);
+        label.setText(text);
+        label.setTextSize(18);
+        label.setTextColor(Color.WHITE);
+        label.setPadding(0, 10, 0, 5);
+        return label;
     }
 
-    private EditText createNumberListInput(List<Integer> initialValue) {
-        EditText editText = new EditText(this);
-        editText.setText(listToString(initialValue));
-        editText.setSelectAllOnFocus(true);
+    private EditText createNumberInput(int value) {
+        EditText input = new EditText(this);
+        input.setText(String.valueOf(value));
+        applyEditTextStyle(input);
+        return input;
+    }
 
-        // Set padding and background
+    private EditText createNumberInputList(List<Integer> values) {
+        EditText input = new EditText(this);
+        input.setText(values.stream().map(String::valueOf).collect(Collectors.joining(", ")));
+        applyEditTextStyle(input);
+        return input;
+    }
+
+    private void applyEditTextStyle(EditText editText) {
         editText.setPadding(20, 15, 20, 15);
-        editText.setLayoutParams(new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-        ));
-
-        // Add rounded corners using a shape drawable programmatically
         GradientDrawable background = new GradientDrawable();
         background.setColor(Color.WHITE);
         background.setCornerRadius(10);
-        background.setStroke(1, Color.GRAY); // Border color
+        background.setStroke(1, Color.GRAY);
         editText.setBackground(background);
         editText.setTextColor(Color.BLUE);
-        editText.setHintTextColor(Color.GRAY);
-
-        return editText;
     }
 
-    // Helper method to parse input text or fall back to a default value
-    private int parseInteger(String text, int defaultValue) {
-        try {
-            return Integer.parseInt(text);
-        } catch (NumberFormatException e) {
-            return defaultValue;  // Fallback to default if parsing fails
-        }
+    private void updateConfigurations(LinearLayout layout) {
+        NUM_EPOCHS = Integer.parseInt(((EditText) layout.getChildAt(1)).getText().toString());
+        NUM_BATCHES = Integer.parseInt(((EditText) layout.getChildAt(3)).getText().toString());
+        BATCH_SIZE = Integer.parseInt(((EditText) layout.getChildAt(5)).getText().toString());
+        dimensions = Arrays.stream(((EditText) layout.getChildAt(7)).getText().toString().split(","))
+                .map(Integer::parseInt).collect(Collectors.toList());
+        setConfigurationsTextView();
     }
 
-    private List<Integer> parseIntegerList(String text, List<Integer> defaultValue) {
-        try {
-            return stringToList(text);
-        } catch (NumberFormatException e) {
-            return defaultValue;  // Fallback to default if parsing fails
-        }
+    private void setConfigurationsTextView() {
+        String formattedText = "<b>Configuration Details</b><br>" +
+                "<font color='#4CAF50'>Epochs:</font> " + NUM_EPOCHS + "<br>" +
+                "<font color='#4CAF50'>Batches:</font> " + NUM_BATCHES + "<br>" +
+                "<font color='#4CAF50'>Batch Size:</font> " + BATCH_SIZE + "<br>" +
+                "<font color='#4CAF50'>Dimensions:</font> " + listToString(dimensions);
+        tvConfigurations.setText(Html.fromHtml(formattedText, Html.FROM_HTML_MODE_LEGACY));
     }
+
 
     private void applyAnimations() {
         // Load animations
@@ -262,6 +230,7 @@ public class MainActivity extends AppCompatActivity {
         btnSelectModel.startAnimation(slideUp);
         btnSelectDataset.startAnimation(slideUp);
         btnStartTraining.startAnimation(scaleUp);
+        setConfigurationsTextView();
     }
 
     private void downloadFile(String url, String fileType, boolean isModel, File saveFile) {
@@ -340,7 +309,15 @@ public class MainActivity extends AppCompatActivity {
                         tvStatus.setText("Error reading " + fileType + ": " + e.getMessage());
                     });
                 } finally {
-                    runOnUiThread(() -> downloadProgressBar.setVisibility(View.GONE));
+                    runOnUiThread(() -> {
+                        downloadProgressBar.setVisibility(View.GONE);
+                        if (isModel) {
+                            checkmarkSelectModel.setVisibility(View.VISIBLE);
+                        } else {
+                            checkmarkSelectDataset.setVisibility(View.VISIBLE);
+                        }
+                    });
+
                 }
             }
         });
@@ -465,6 +442,7 @@ public class MainActivity extends AppCompatActivity {
                 long trainingTime = System.currentTimeMillis() - startTime;
                 runOnUiThread(() -> {
                     tvStatus.setText("Training Completed. Time: " + trainingTime + "ms");
+                    checkmarkStartTraining.setVisibility(View.VISIBLE);
                     progressBar.setVisibility(View.GONE);
                 });
             }
