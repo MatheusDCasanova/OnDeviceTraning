@@ -55,7 +55,6 @@ import java.nio.ByteOrder;
 
 import java.util.ArrayList;
 
-import android.content.Intent;
 import android.content.IntentFilter;
 
 public class MainActivity extends AppCompatActivity {
@@ -489,11 +488,12 @@ public class MainActivity extends AppCompatActivity {
 
                 Log.d("ENERGY", "Joules " + energy);
 
-
                 long trainingTime = System.currentTimeMillis() - startTime;
 
+                saveToHistory(trainingTime, energy);
+
                 runOnUiThread(() -> {
-                    saveToHistory(trainingTime);
+
                     tvStatus.setText("Training Completed. Time: " + trainingTime + "ms");
                     checkmarkStartTraining.setVisibility(View.VISIBLE);
                     progressBar.setVisibility(View.GONE);
@@ -510,13 +510,14 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-    private void saveToHistory(long trainingTime) {
+    private void saveToHistory(long trainingTime, double energy) {
         ModelConfig config = new ModelConfig();
         config.setBatches(NUM_BATCHES);
         config.setEpochs(NUM_EPOCHS);
         config.setDimensions(dimensions.toString());
         config.setBatchSize(BATCH_SIZE);
         config.setTime((int) trainingTime);
+        config.setEnergy(energy);
         HistoryManager historyManager = new HistoryManager(this);
         List<ModelConfig> configs = historyManager.readJsonFileToList();
         if (configs == null) {

@@ -8,6 +8,7 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
+import java.text.BreakIterator;
 import java.util.List;
 
 public class ModelConfigAdapter extends RecyclerView.Adapter<ModelConfigAdapter.ViewHolder> {
@@ -34,6 +35,7 @@ public class ModelConfigAdapter extends RecyclerView.Adapter<ModelConfigAdapter.
         holder.modelLinkText.setText("Model Link: " + modelConfig.getModelLink());
         holder.datasetLinkText.setText("Dataset Link: " + modelConfig.getDatasetLink());
         holder.timeText.setText("Time: " + modelConfig.getTime() + " seconds");
+        holder.energyText.setText("Energy(Joules): " + modelConfig.getEnergy() + "");
     }
 
     @Override
@@ -49,6 +51,7 @@ public class ModelConfigAdapter extends RecyclerView.Adapter<ModelConfigAdapter.
         TextView modelLinkText;
         TextView datasetLinkText;
         TextView timeText;
+        TextView energyText;
 
         ViewHolder(View itemView) {
             super(itemView);
@@ -59,6 +62,7 @@ public class ModelConfigAdapter extends RecyclerView.Adapter<ModelConfigAdapter.
             modelLinkText = itemView.findViewById(R.id.model_link_text);
             datasetLinkText = itemView.findViewById(R.id.dataset_link_text);
             timeText = itemView.findViewById(R.id.time_text);
+            energyText = itemView.findViewById(R.id.energy_text);
         }
     }
 }

@@ -9,6 +9,8 @@ public class ModelConfig {
     private String datasetLink;
     private int time;
 
+    private double energy;
+
     // Getters and Setters
     public int getEpochs() {
         return epochs;
@@ -65,4 +67,13 @@ public class ModelConfig {
     public void setTime(int time) {
         this.time = time;
     }
+
+    public double getEnergy() {
+        return energy;
+    }
+
+    public void setEnergy(double energy) {
+        this.energy = energy;
+    }
+
 }
