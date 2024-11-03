@@ -1,6 +1,7 @@
 package com.example.myapplication;
 
 import android.annotation.SuppressLint;
+import android.content.Intent;
 import android.graphics.Color;
 import android.graphics.drawable.GradientDrawable;
 import android.os.Bundle;
@@ -10,12 +11,15 @@ import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.view.GravityCompat;
+import androidx.drawerlayout.widget.DrawerLayout;
 
 import java.util.Arrays;
 import java.util.List;
@@ -71,6 +75,8 @@ public class MainActivity extends AppCompatActivity {
     private Button btnSelectDataset;
     private ImageView checkmarkSelectDataset;
     private Button btnStartTraining;
+    
+    private Button btnShowHistory;
     private ImageView checkmarkStartTraining;
     private ProgressBar progressBar;
     List<Integer> dimensions = List.of(10000);
@@ -81,7 +87,7 @@ public class MainActivity extends AppCompatActivity {
 
     private ProgressBar downloadProgressBar;
 
-
+    private DrawerLayout drawerLayout;
 
     @SuppressLint("SetTextI18n")
     @Override
@@ -97,6 +103,12 @@ public class MainActivity extends AppCompatActivity {
         btnSelectDataset.setOnClickListener(v -> selectDataset());
         btnStartTraining.setOnClickListener(v -> startTrainingIfReady());
         btnConfigurations.setOnClickListener(v -> showConfigurationsDialog());
+        btnShowHistory.setOnClickListener(v -> { showHistory(); });
+    }
+
+    private void showHistory() {
+        Intent intent = new Intent(MainActivity.this, HistoryActivity.class);
+        startActivity(intent);
     }
 
     private void initViews(){
@@ -112,6 +124,21 @@ public class MainActivity extends AppCompatActivity {
         progressBar = findViewById(R.id.progressBar);
         downloadProgressBar = findViewById(R.id.downloadProgressBar);
         tvConfigurations = findViewById(R.id.tv_configurations);
+        drawerLayout = findViewById(R.id.drawer_layout); // Ensure this matches your DrawerLayout ID
+        ImageButton btnOpenHistory = findViewById(R.id.btn_open_history);
+        btnShowHistory = findViewById(R.id.btn_history);
+
+        // Set click listener to open the sidebar
+        btnOpenHistory.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (drawerLayout.isDrawerOpen(GravityCompat.START)) {
+                    drawerLayout.closeDrawer(GravityCompat.START);
+                } else {
+                    drawerLayout.openDrawer(GravityCompat.START);
+                }
+            }
+        });
     }
 
     private void startTrainingIfReady() {
@@ -441,12 +468,30 @@ public class MainActivity extends AppCompatActivity {
             } finally {
                 long trainingTime = System.currentTimeMillis() - startTime;
                 runOnUiThread(() -> {
+                    saveToHistory(trainingTime);
                     tvStatus.setText("Training Completed. Time: " + trainingTime + "ms");
                     checkmarkStartTraining.setVisibility(View.VISIBLE);
                     progressBar.setVisibility(View.GONE);
                 });
             }
         });
+    }
+
+    private void saveToHistory(long trainingTime) {
+        ModelConfig config = new ModelConfig();
+        config.setBatches(NUM_BATCHES);
+        config.setEpochs(NUM_EPOCHS);
+        config.setDimensions(dimensions.toString());
+        config.setBatchSize(BATCH_SIZE);
+        config.setTime((int) trainingTime);
+        HistoryManager historyManager = new HistoryManager(this);
+        List<ModelConfig> configs = historyManager.readJsonFileToList();
+        if (configs == null) {
+            configs = new ArrayList<>();
+        }
+        configs.add(config);
+        historyManager.saveListToJsonFile(configs);
+        historyManager.printJsonFileContent();
     }
 
 }

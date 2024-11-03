@@ -1,203 +1,256 @@
-<androidx.constraintlayout.widget.ConstraintLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.drawerlayout.widget.DrawerLayout
+xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
+    android:id="@+id/drawer_layout"
+android:layout_height="match_parent">
+
+<!-- Main Content -->
+<androidx.constraintlayout.widget.ConstraintLayout
+    android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:padding="24dp"
-    android:background="@android:color/white"
-    tools:context=".MainActivity">
+    android:background="@android:color/white">
 
-    <!-- App Title -->
-    <TextView
-        android:id="@+id/tvTitle"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="On-device Model Training"
-        android:textSize="28sp"
-        android:textStyle="bold"
-        android:textColor="#6200EA"
-        android:layout_marginTop="32dp"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"/>
-
-    <!-- Status TextView -->
-    <TextView
-        android:id="@+id/tv_status"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
-        android:gravity="center"
-        android:text="Status: Waiting for inputs"
-        android:textColor="#FF5722"
-        android:textSize="20sp"
-        app:layout_constraintTop_toBottomOf="@id/tvTitle"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
-
-    <!-- Download Progress Bar -->
-    <ProgressBar
-        android:id="@+id/downloadProgressBar"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="24dp"
-        android:visibility="gone"
-        style="?android:attr/progressBarStyleHorizontal"
-        app:layout_constraintTop_toBottomOf="@+id/tv_status"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"/>
-
-    <!-- Configurations Button -->
-    <LinearLayout
-        android:id="@+id/btn_configurations_container"
+    <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:layout_marginTop="16dp"
-        app:layout_constraintTop_toBottomOf="@+id/downloadProgressBar">
+        android:layout_height="match_parent"
+        android:background="@android:color/white"
+        android:padding="8dp"
+        tools:context=".MainActivity"
+        tools:layout_editor_absoluteX="24dp"
+        tools:layout_editor_absoluteY="24dp">
 
-        <Button
-            android:id="@+id/btn_configurations"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:backgroundTint="#607D8B"
-            android:padding="12dp"
-            android:text="Set Configurations"
-            android:textColor="#FFFFFF"/>
+        <!-- Open History Button with Menu Icon -->
 
-        <ImageView
-            android:id="@+id/checkmark_configurations"
+        <!-- App Title -->
+
+        <ImageButton
+            android:id="@+id/btn_open_history"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_centerInParent="true"
-            android:layout_marginStart="1dp"
-            android:visibility="gone"
-            android:backgroundTint="#607D8B"
-            android:src="@drawable/ic_check"
-            android:layout_gravity="center"
-            />
-    </LinearLayout>
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Open history"
+            android:src="@drawable/ic_menu"
+            app:layout_constraintBottom_toBottomOf="@id/tvTitle"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintVertical_bias="0.0"
+            app:tint="#6200EA" />
 
-    <!-- Select Model Button -->
-    <LinearLayout
-        android:id="@+id/btn_model_container"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:layout_marginTop="16dp"
-        app:layout_constraintTop_toBottomOf="@+id/btn_configurations_container">
-
-        <Button
-            android:id="@+id/btn_select_model"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:backgroundTint="#6200EA"
-            android:padding="12dp"
-            android:text="Select Model"
-            android:textColor="#FFFFFF"/>
-
-        <ImageView
-            android:id="@+id/checkmark_model"
+        <TextView
+            android:id="@+id/tvTitle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_centerInParent="true"
-            android:layout_marginStart="1dp"
-            android:visibility="gone"
-            android:src="@drawable/ic_check"
-            android:layout_gravity="center"
-            />
-    </LinearLayout>
+            android:layout_marginTop="32dp"
+            android:text="On-device Model Training"
+            android:textColor="#6200EA"
+            android:textSize="28sp"
+            android:textStyle="bold"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
 
-    <!-- Select Dataset Button -->
-    <LinearLayout
-        android:id="@+id/btn_dataset_container"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:layout_marginTop="16dp"
-        app:layout_constraintTop_toBottomOf="@+id/btn_model_container">
-
-        <Button
-            android:id="@+id/btn_select_dataset"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:backgroundTint="#03A9F4"
-            android:padding="12dp"
-            android:text="Select Dataset"
-            android:textColor="#FFFFFF"/>
-
-        <ImageView
-            android:id="@+id/checkmark_dataset"
+        <!-- Status TextView -->
+        <TextView
+            android:id="@+id/tv_status"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_centerInParent="true"
-            android:layout_marginStart="1dp"
-            android:visibility="gone"
-            android:src="@drawable/ic_check"
-            android:layout_gravity="center"
-            />
-    </LinearLayout>
+            android:layout_marginTop="16dp"
+            android:gravity="center"
+            android:text="Status: Waiting for inputs"
+            android:textColor="#FF5722"
+            android:textSize="20sp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/tvTitle" />
 
-    <!-- Start Training Button -->
-    <LinearLayout
-        android:id="@+id/btn_training_container"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:layout_marginTop="16dp"
-        app:layout_constraintTop_toBottomOf="@+id/btn_dataset_container">
-
-        <Button
-            android:id="@+id/btn_start_training"
+        <!-- Download Progress Bar -->
+        <ProgressBar
+            android:id="@+id/downloadProgressBar"
+            style="?android:attr/progressBarStyleHorizontal"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:backgroundTint="#4CAF50"
-            android:padding="12dp"
-            android:text="Start Training"
-            android:textColor="#FFFFFF"/>
+            android:layout_marginTop="24dp"
+            android:visibility="gone"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/tv_status" />
 
-        <ImageView
-            android:id="@+id/checkmark_training"
+        <!-- Configurations Button -->
+        <LinearLayout
+            android:id="@+id/btn_configurations_container"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:orientation="horizontal"
+            app:layout_constraintTop_toBottomOf="@+id/downloadProgressBar">
+
+            <Button
+                android:id="@+id/btn_configurations"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:backgroundTint="#607D8B"
+                android:padding="12dp"
+                android:text="Set Configurations"
+                android:textColor="#FFFFFF" />
+
+            <ImageView
+                android:id="@+id/checkmark_configurations"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerInParent="true"
+                android:layout_gravity="center"
+                android:layout_marginStart="1dp"
+                android:backgroundTint="#607D8B"
+                android:src="@drawable/ic_check"
+                android:visibility="gone" />
+        </LinearLayout>
+
+        <!-- Select Model Button -->
+        <LinearLayout
+            android:id="@+id/btn_model_container"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:orientation="horizontal"
+            app:layout_constraintTop_toBottomOf="@+id/btn_configurations_container">
+
+            <Button
+                android:id="@+id/btn_select_model"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:backgroundTint="#6200EA"
+                android:padding="12dp"
+                android:text="Select Model"
+                android:textColor="#FFFFFF" />
+
+            <ImageView
+                android:id="@+id/checkmark_model"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerInParent="true"
+                android:layout_gravity="center"
+                android:layout_marginStart="1dp"
+                android:src="@drawable/ic_check"
+                android:visibility="gone" />
+        </LinearLayout>
+
+        <!-- Select Dataset Button -->
+        <LinearLayout
+            android:id="@+id/btn_dataset_container"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:orientation="horizontal"
+            app:layout_constraintTop_toBottomOf="@+id/btn_model_container">
+
+            <Button
+                android:id="@+id/btn_select_dataset"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:backgroundTint="#03A9F4"
+                android:padding="12dp"
+                android:text="Select Dataset"
+                android:textColor="#FFFFFF" />
+
+            <ImageView
+                android:id="@+id/checkmark_dataset"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerInParent="true"
+                android:layout_gravity="center"
+                android:layout_marginStart="1dp"
+                android:src="@drawable/ic_check"
+                android:visibility="gone" />
+        </LinearLayout>
+
+        <!-- Start Training Button -->
+        <LinearLayout
+            android:id="@+id/btn_training_container"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:orientation="horizontal"
+            app:layout_constraintTop_toBottomOf="@+id/btn_dataset_container">
+
+            <Button
+                android:id="@+id/btn_start_training"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:backgroundTint="#4CAF50"
+                android:padding="12dp"
+                android:text="Start Training"
+                android:textColor="#FFFFFF" />
+
+            <ImageView
+                android:id="@+id/checkmark_training"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerInParent="true"
+                android:layout_gravity="center"
+                android:layout_marginStart="1dp"
+                android:src="@drawable/ic_check"
+                android:visibility="gone" />
+        </LinearLayout>
+
+        <ProgressBar
+            android:id="@+id/progressBar"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_centerInParent="true"
-            android:layout_marginStart="1dp"
+            android:layout_marginTop="24dp"
             android:visibility="gone"
-            android:src="@drawable/ic_check"
-            android:layout_gravity="center"
-            />
-    </LinearLayout>
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/downloadProgressBar" />
 
-    <ProgressBar
-        android:id="@+id/progressBar"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="24dp"
-        android:visibility="gone"
-        app:layout_constraintTop_toBottomOf="@+id/downloadProgressBar"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"/>
+        <TextView
+            android:id="@+id/tv_configurations"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:layout_marginBottom="16dp"
+            android:ellipsize="end"
+            android:gravity="start"
+            android:maxLines="5"
+            android:padding="16dp"
+            android:scrollbars="vertical"
+            android:text="Configurations: Not Set"
+            android:textColor="#607D8B"
+            android:textSize="20sp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/btn_training_container" />
 
-    <TextView
-        android:id="@+id/tv_configurations"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_marginBottom="16dp"
-        android:text="Configurations: Not Set"
-        android:textColor="#607D8B"
-        android:textSize="20sp"
-        android:padding="16dp"
-        android:maxLines="5"
-        android:scrollbars="vertical"
-        android:ellipsize="end"
-        android:gravity="start"
-        android:layout_marginTop="16dp"
-        app:layout_constraintTop_toBottomOf="@+id/btn_training_container"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"/>
+
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+
 </androidx.constraintlayout.widget.ConstraintLayout>
+
+<!-- Sidebar with History Button -->
+<LinearLayout
+    android:layout_width="200dp"
+    android:layout_height="match_parent"
+    android:layout_gravity="start"
+    android:background="#EEEEEE"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <Button
+        android:id="@+id/btn_history"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="History"
+        android:backgroundTint="#6200EA"
+        android:textColor="#FFFFFF" />
+
+</LinearLayout>
+
+</androidx.drawerlayout.widget.DrawerLayout>
