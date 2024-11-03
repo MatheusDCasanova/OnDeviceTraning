@@ -6,7 +6,6 @@ import android.graphics.Color;
 import android.graphics.drawable.GradientDrawable;
 import android.os.Bundle;
 import android.text.Html;
-import android.text.Spanned;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
@@ -15,6 +14,8 @@ import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.os.BatteryManager;
+import android.content.Context;
 
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
@@ -41,7 +42,6 @@ import okhttp3.Response;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.widget.ProgressBar;
-import android.widget.Toast;
 
 import java.io.ByteArrayOutputStream;
 import java.io.BufferedInputStream;
@@ -55,6 +55,8 @@ import java.nio.ByteOrder;
 
 import java.util.ArrayList;
 
+import android.content.Intent;
+import android.content.IntentFilter;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -363,6 +365,12 @@ public class MainActivity extends AppCompatActivity {
                 .collect(Collectors.toList());
     }
 
+    private double calculateEnergy(Long consumed_charge, int voltage){
+        double float_charge = consumed_charge.doubleValue(); // microAmpere-hour
+
+        return (float_charge/1e6) * (((double) voltage)/1e3) * 3600;
+    }
+
 
     private void startTraining() {
         if (featuresBuffer == null || labelsBuffer == null) {
@@ -442,6 +450,8 @@ public class MainActivity extends AppCompatActivity {
                 float[] losses = new float[NUM_EPOCHS];
 
                 startTime = System.currentTimeMillis();
+                BatteryManager mBatteryManager = (BatteryManager) this.getSystemService(Context.BATTERY_SERVICE);
+                Long start_charge = mBatteryManager.getLongProperty(BatteryManager.BATTERY_PROPERTY_CHARGE_COUNTER);
 
                 for (int epoch = 0; epoch < NUM_EPOCHS; ++epoch) {
                     FloatBuffer loss = FloatBuffer.allocate(4).put(1);
@@ -463,13 +473,36 @@ public class MainActivity extends AppCompatActivity {
                     System.out.println("Finished " + (epoch + 1) + " epochs, current loss: " + loss.get(0));
                 }
 
-            } catch (Exception e) {
-                Log.e(TAG, "Error during training", e);
-            } finally {
+                IntentFilter filter = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
+                Intent batteryStatus = this.registerReceiver(null, filter);
+                int voltageMillivolts = batteryStatus.getIntExtra(BatteryManager.EXTRA_VOLTAGE, -1);
+
+                Long finish_charge = mBatteryManager.getLongProperty(BatteryManager.BATTERY_PROPERTY_CHARGE_COUNTER);
+
+                Long consumed_charge = start_charge - finish_charge;
+
+                Log.d("ENERGY", "Millivolts " + (double) voltageMillivolts);
+
+                Log.d("ENERGY", "Microampere hour " + consumed_charge);
+
+                double energy = calculateEnergy(consumed_charge, voltageMillivolts);
+
+                Log.d("ENERGY", "Joules " + energy);
+
+
                 long trainingTime = System.currentTimeMillis() - startTime;
+
                 runOnUiThread(() -> {
                     saveToHistory(trainingTime);
                     tvStatus.setText("Training Completed. Time: " + trainingTime + "ms");
+                    checkmarkStartTraining.setVisibility(View.VISIBLE);
+                    progressBar.setVisibility(View.GONE);
+                });
+
+            } catch (Exception e) {
+                Log.e(TAG, "Error during training", e);
+                runOnUiThread(() -> {
+                    tvStatus.setText("Error during training");
                     checkmarkStartTraining.setVisibility(View.VISIBLE);
                     progressBar.setVisibility(View.GONE);
                 });
