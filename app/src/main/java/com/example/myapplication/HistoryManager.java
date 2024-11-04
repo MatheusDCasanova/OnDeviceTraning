@@ -10,6 +10,7 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.lang.reflect.Type;
+import java.util.ArrayList;
 import java.util.List;
 
 public class HistoryManager {
@@ -29,7 +30,7 @@ public class HistoryManager {
             return gson.fromJson(reader, listType);
         } catch (IOException e) {
             Log.e("HistoryManager", "Error reading JSON file", e);
-            return null;
+            return new ArrayList<>();
         }
     }
 
