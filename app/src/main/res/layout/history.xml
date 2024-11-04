@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:padding="16dp">
+
+    <!-- Back Button aligned to the start (left) -->
+    <Button
+        android:id="@+id/back_button"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Back"
+        android:layout_alignParentStart="true"
+        android:layout_marginEnd="8dp" /> <!-- Margin to separate buttons -->
+
+    <!-- Share Button aligned to the end (right) -->
+    <Button
+        android:id="@+id/share_button"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Share"
+        android:layout_alignParentEnd="true" />
+
+    <!-- TextView below the buttons -->
+    <TextView
+        android:id="@+id/title"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="This is the history!"
+        android:textSize="24sp"
+        android:textStyle="bold"
+        android:layout_below="@id/back_button"
+        android:layout_marginTop="16dp" /> <!-- Margin for separation -->
+
+    <!-- RecyclerView below the TextView -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/recycler_view"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_below="@id/title"
+        android:layout_marginTop="16dp" />
+
+</RelativeLayout>
