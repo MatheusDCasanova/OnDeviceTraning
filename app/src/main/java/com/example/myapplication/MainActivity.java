@@ -21,6 +21,7 @@ import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.view.GravityCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
+import androidx.viewpager2.widget.ViewPager2;
 
 import java.util.Arrays;
 import java.util.List;
@@ -57,16 +58,20 @@ import java.util.ArrayList;
 
 import android.content.IntentFilter;
 
+import com.google.android.material.tabs.TabLayout;
+import com.google.android.material.tabs.TabLayoutMediator;
+import com.tbuonomo.viewpagerdotsindicator.DotsIndicator;
+
 public class MainActivity extends AppCompatActivity {
 
     private static final String TAG = "MainActivity";
     private String modelUrl = "https://github.com/MatheusDCasanova/OnDeviceTraning/raw/refs/heads/master/model_mnist_fixed_batch_size.tflite";
     private String featuresUrl = "https://github.com/MatheusDCasanova/OnDeviceTraning/raw/refs/heads/master/mnist_feats.bin";
     private String labelsUrl= "https://github.com/MatheusDCasanova/OnDeviceTraning/raw/refs/heads/master/mnist_labels.bin";
-    private File modelFile;
+    public File modelFile;
     private FloatBuffer featuresBuffer;
     private FloatBuffer labelsBuffer;
-
+    private String configsString;
     private TextView tvStatus;
     private TextView tvConfigurations;
     private Button btnConfigurations;
@@ -76,19 +81,21 @@ public class MainActivity extends AppCompatActivity {
     private Button btnSelectDataset;
     private ImageView checkmarkSelectDataset;
     private Button btnStartTraining;
-    
+
     private Button btnShowHistory;
     private ImageView checkmarkStartTraining;
     private ProgressBar progressBar;
-    List<Integer> dimensions = List.of(10000);
-    private int BATCH_SIZE = 64;
-    private int NUM_BATCHES = 100;
+    public List<Integer> dimensions = List.of(28,28);
+    public int BATCH_SIZE = 64;
+    public int NUM_BATCHES = 100;
 
-    private int NUM_EPOCHS = 1;
+    public int NUM_EPOCHS = 1;
 
     private ProgressBar downloadProgressBar;
 
     private DrawerLayout drawerLayout;
+    public ViewPager2 viewPager;
+    public CardAdapter adapter;
 
     @SuppressLint("SetTextI18n")
     @Override
@@ -98,36 +105,41 @@ public class MainActivity extends AppCompatActivity {
 
         initViews();
 
-        applyAnimations();
+        //applyAnimations();
 
-        btnSelectModel.setOnClickListener(v -> selectModel());
-        btnSelectDataset.setOnClickListener(v -> selectDataset());
+//        btnSelectModel.setOnClickListener(v -> selectModel());
+//        btnSelectDataset.setOnClickListener(v -> selectDataset());
         btnStartTraining.setOnClickListener(v -> startTrainingIfReady());
-        btnConfigurations.setOnClickListener(v -> showConfigurationsDialog());
+//        btnConfigurations.setOnClickListener(v -> showConfigurationsDialog());
         btnShowHistory.setOnClickListener(v -> { showHistory(); });
     }
 
-    private void showHistory() {
+    public void showHistory() {
         Intent intent = new Intent(MainActivity.this, HistoryActivity.class);
         startActivity(intent);
     }
 
+
     private void initViews(){
-        btnConfigurations = findViewById(R.id.btn_configurations);
-        checkmarkConfigurations = findViewById(R.id.checkmark_configurations);
-        btnSelectModel = findViewById(R.id.btn_select_model);
-        checkmarkSelectModel = findViewById(R.id.checkmark_model);
-        btnSelectDataset = findViewById(R.id.btn_select_dataset);
-        checkmarkSelectDataset = findViewById(R.id.checkmark_dataset);
-        btnStartTraining = findViewById(R.id.btn_start_training);
-        checkmarkStartTraining = findViewById(R.id.checkmark_training);
         tvStatus = findViewById(R.id.tv_status);
         progressBar = findViewById(R.id.progressBar);
         downloadProgressBar = findViewById(R.id.downloadProgressBar);
-        tvConfigurations = findViewById(R.id.tv_configurations);
         drawerLayout = findViewById(R.id.drawer_layout); // Ensure this matches your DrawerLayout ID
         ImageButton btnOpenHistory = findViewById(R.id.btn_open_history);
         btnShowHistory = findViewById(R.id.btn_history);
+        btnStartTraining = findViewById(R.id.btn_start_training);
+
+
+        viewPager = findViewById(R.id.viewPager);
+
+        // Sample data for the cards
+        List<String> titles = Arrays.asList("Model", "Dataset", "Configurations", "Last Training info");
+        List<String> contents = Arrays.asList("Content for card 1", "Content for card 2", configsString, "no info");
+        List<String> buttonNames = Arrays.asList("set Model", "set Dataset", "set Configurations", "show History");
+        DotsIndicator dotsIndicator = findViewById(R.id.dots_indicator);
+        adapter = new CardAdapter(viewPager, this, titles, contents, buttonNames, this);
+        viewPager.setAdapter(adapter);
+        dotsIndicator.setViewPager2(viewPager);
 
         // Set click listener to open the sidebar
         btnOpenHistory.setOnClickListener(new View.OnClickListener() {
@@ -162,90 +174,6 @@ public class MainActivity extends AppCompatActivity {
         downloadFile(modelUrl, "Model", true, modelFile);
     }
 
-    private void showConfigurationsDialog() {
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle("Set Configuration");
-        LinearLayout layout = createConfigurationsLayout();
-        builder.setView(layout)
-                .setPositiveButton("OK", (dialog, which) -> {
-                    updateConfigurations(layout);
-                    checkmarkConfigurations.setVisibility(View.VISIBLE);
-                })
-                .setNegativeButton("Cancel", (dialog, which) -> dialog.cancel())
-                .show();
-    }
-
-    private LinearLayout createConfigurationsLayout() {
-        LinearLayout layout = new LinearLayout(this);
-        layout.setOrientation(LinearLayout.VERTICAL);
-        layout.setPadding(20, 20, 20, 20);
-
-        layout.addView(createLabel("Number of epochs:"));
-        layout.addView(createNumberInput(NUM_EPOCHS));
-
-        layout.addView(createLabel("Number of batches:"));
-        layout.addView(createNumberInput(NUM_BATCHES));
-
-        layout.addView(createLabel("Batch Size:"));
-        layout.addView(createNumberInput(BATCH_SIZE));
-
-        layout.addView(createLabel("Feature Dimensions:"));
-        layout.addView(createNumberInputList(dimensions));
-
-        return layout;
-    }
-
-    private TextView createLabel(String text) {
-        TextView label = new TextView(this);
-        label.setText(text);
-        label.setTextSize(18);
-        label.setTextColor(Color.WHITE);
-        label.setPadding(0, 10, 0, 5);
-        return label;
-    }
-
-    private EditText createNumberInput(int value) {
-        EditText input = new EditText(this);
-        input.setText(String.valueOf(value));
-        applyEditTextStyle(input);
-        return input;
-    }
-
-    private EditText createNumberInputList(List<Integer> values) {
-        EditText input = new EditText(this);
-        input.setText(values.stream().map(String::valueOf).collect(Collectors.joining(", ")));
-        applyEditTextStyle(input);
-        return input;
-    }
-
-    private void applyEditTextStyle(EditText editText) {
-        editText.setPadding(20, 15, 20, 15);
-        GradientDrawable background = new GradientDrawable();
-        background.setColor(Color.WHITE);
-        background.setCornerRadius(10);
-        background.setStroke(1, Color.GRAY);
-        editText.setBackground(background);
-        editText.setTextColor(Color.BLUE);
-    }
-
-    private void updateConfigurations(LinearLayout layout) {
-        NUM_EPOCHS = Integer.parseInt(((EditText) layout.getChildAt(1)).getText().toString());
-        NUM_BATCHES = Integer.parseInt(((EditText) layout.getChildAt(3)).getText().toString());
-        BATCH_SIZE = Integer.parseInt(((EditText) layout.getChildAt(5)).getText().toString());
-        dimensions = Arrays.stream(((EditText) layout.getChildAt(7)).getText().toString().split(","))
-                .map(Integer::parseInt).collect(Collectors.toList());
-        setConfigurationsTextView();
-    }
-
-    private void setConfigurationsTextView() {
-        String formattedText = "<b>Configuration Details</b><br>" +
-                "<font color='#4CAF50'>Epochs:</font> " + NUM_EPOCHS + "<br>" +
-                "<font color='#4CAF50'>Batches:</font> " + NUM_BATCHES + "<br>" +
-                "<font color='#4CAF50'>Batch Size:</font> " + BATCH_SIZE + "<br>" +
-                "<font color='#4CAF50'>Dimensions:</font> " + listToString(dimensions);
-        tvConfigurations.setText(Html.fromHtml(formattedText, Html.FROM_HTML_MODE_LEGACY));
-    }
-
 
     private void applyAnimations() {
         // Load animations
@@ -258,10 +186,9 @@ public class MainActivity extends AppCompatActivity {
         btnSelectModel.startAnimation(slideUp);
         btnSelectDataset.startAnimation(slideUp);
         btnStartTraining.startAnimation(scaleUp);
-        setConfigurationsTextView();
     }
 
-    private void downloadFile(String url, String fileType, boolean isModel, File saveFile) {
+    public void downloadFile(String url, String fileType, boolean isModel, File saveFile) {
         tvStatus.setText("Downloading " + fileType + "...");
         downloadProgressBar.setVisibility(View.VISIBLE);
         downloadProgressBar.setProgress(0);
@@ -339,11 +266,6 @@ public class MainActivity extends AppCompatActivity {
                 } finally {
                     runOnUiThread(() -> {
                         downloadProgressBar.setVisibility(View.GONE);
-                        if (isModel) {
-                            checkmarkSelectModel.setVisibility(View.VISIBLE);
-                        } else {
-                            checkmarkSelectDataset.setVisibility(View.VISIBLE);
-                        }
                     });
 
                 }
@@ -490,27 +412,26 @@ public class MainActivity extends AppCompatActivity {
 
                 long trainingTime = System.currentTimeMillis() - startTime;
 
-                saveToHistory(trainingTime, energy);
+                ModelConfig config = saveToHistory(trainingTime, energy);
 
                 runOnUiThread(() -> {
 
                     tvStatus.setText("Training Completed. Time: " + trainingTime + "ms");
-                    checkmarkStartTraining.setVisibility(View.VISIBLE);
                     progressBar.setVisibility(View.GONE);
+                    adapter.updateLastTrainingInfo(getLastTrainingInfo());
                 });
 
             } catch (Exception e) {
                 Log.e(TAG, "Error during training", e);
                 runOnUiThread(() -> {
                     tvStatus.setText("Error during training");
-                    checkmarkStartTraining.setVisibility(View.VISIBLE);
                     progressBar.setVisibility(View.GONE);
                 });
             }
         });
     }
 
-    private void saveToHistory(long trainingTime, double energy) {
+    private ModelConfig saveToHistory(long trainingTime, double energy) {
         ModelConfig config = new ModelConfig();
         config.setBatches(NUM_BATCHES);
         config.setEpochs(NUM_EPOCHS);
@@ -526,6 +447,22 @@ public class MainActivity extends AppCompatActivity {
         configs.add(config);
         historyManager.saveListToJsonFile(configs);
         historyManager.printJsonFileContent();
+        return config;
+    }
+
+    public String getLastTrainingInfo() {
+        HistoryManager historyManager = new HistoryManager(this);
+        List<ModelConfig> configs = historyManager.readJsonFileToList();
+        if (configs == null || configs.isEmpty()) {
+            return "";
+        }
+        ModelConfig config = configs.get(configs.size() - 1);
+        return"<font color='#4CAF50'>Epochs:</font> " + config.getEpochs() + "<br>" +
+                "<font color='#4CAF50'>Batches:</font> " + config.getBatches() + "<br>" +
+                "<font color='#4CAF50'>Batch Size:</font> " +config.getBatchSize() + "<br>" +
+                "<font color='#4CAF50'>Dimensions:</font> " + config.getDimensions() + "<br>" +
+                "<font color='#4CAF50'>Time:</font> " + config.getTime() + "<br>" +
+                "<font color='#4CAF50'>Energy:</font> " + config.getEnergy();
     }
 
 }

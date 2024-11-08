@@ -2,4 +2,12 @@
     <style name="AppTheme" parent="Theme.AppCompat.Light.NoActionBar">
         <!-- Customize your theme here -->
     </style>
+    <!-- Define a custom style for the AlertDialog -->
+    <style name="CustomAlertDialogStyle" parent="ThemeOverlay.MaterialComponents.Dialog.Alert">
+        <!-- Set the background color to gray -->
+        <item name="android:background">#D3D3D3</item>
+        <!-- Optional: Customize other properties if desired -->
+        <item name="android:textColorPrimary">#000000</item>
+    </style>
+
 </resources>
