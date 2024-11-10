@@ -9,6 +9,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -31,6 +32,7 @@ public class CardAdapter extends RecyclerView.Adapter<CardAdapter.CardViewHolder
     private String labelsUrl= "https://github.com/MatheusDCasanova/OnDeviceTraning/raw/refs/heads/master/mnist_labels.bin";
     private String lastTrainingInfo = "";
     private String configsString = "";
+    private boolean replicateSingleFeature = false;
 
     private List<String> titles = Arrays.asList("Model", "Dataset", "Configurations", "Last Training info");
     private List<String> contents = Arrays.asList("Content for card 1", "Content for card 2", "no info", "no info");
@@ -104,9 +106,12 @@ public class CardAdapter extends RecyclerView.Adapter<CardAdapter.CardViewHolder
                 .setPositiveButton("OK", (dialog, which) -> {
                     updateDataset(layout);
                 })
-                .setNegativeButton("Cancel", (dialog, which) -> dialog.cancel())
-                .show();
+                .setNegativeButton("Cancel", (dialog, which) -> dialog.cancel());
+        AlertDialog dialog = builder.create();
+        dialog.show();
         setDatasetTextView(holder);
+
+        applyButtonStyling(dialog);
     }
 
     private void updateDataset(LinearLayout layout) {
@@ -131,6 +136,15 @@ public class CardAdapter extends RecyclerView.Adapter<CardAdapter.CardViewHolder
         layout.addView(createLabel("Labels URL:"));
         layout.addView(createStringInput(labelsUrl));
 
+        // Create the checkbox for "Replicate single feature"
+        CheckBox replicateCheckbox = new CheckBox(this.context);
+        replicateCheckbox.setText("Replicate single feature");
+        replicateCheckbox.setChecked(replicateSingleFeature); // Initialize with the current value
+        replicateCheckbox.setTextColor(Color.BLACK);
+        replicateCheckbox.setOnCheckedChangeListener((buttonView, isChecked) -> replicateSingleFeature = isChecked);
+
+        // Add checkbox to the layout
+        layout.addView(replicateCheckbox);
 
         return layout;
     }
@@ -161,9 +175,12 @@ public class CardAdapter extends RecyclerView.Adapter<CardAdapter.CardViewHolder
                     updateConfigurations(layout);
                     setConfigurationsTextView(holder);
                 })
-                .setNegativeButton("Cancel", (dialog, which) -> dialog.cancel())
-                .show();
+                .setNegativeButton("Cancel", (dialog, which) -> dialog.cancel());
+        AlertDialog dialog = builder.create();
+        dialog.show();
         setConfigurationsTextView(holder);
+
+        applyButtonStyling(dialog);
     }
 
     private void showModelDialog(CardViewHolder holder) {
@@ -174,9 +191,11 @@ public class CardAdapter extends RecyclerView.Adapter<CardAdapter.CardViewHolder
                 .setPositiveButton("OK", (dialog, which) -> {
                     updateModel(layout);
                 })
-                .setNegativeButton("Cancel", (dialog, which) -> dialog.cancel())
-                .show();
+                .setNegativeButton("Cancel", (dialog, which) -> dialog.cancel());
+        AlertDialog dialog = builder.create();
+        dialog.show();
         setModelTextView(holder);
+        applyButtonStyling(dialog);
     }
 
     private void setModelTextView(CardViewHolder holder) {
@@ -227,7 +246,7 @@ public class CardAdapter extends RecyclerView.Adapter<CardAdapter.CardViewHolder
         TextView label = new TextView(this.context);
         label.setText(text);
         label.setTextSize(18);
-        label.setTextColor(Color.WHITE);
+        label.setTextColor(Color.BLACK);
         label.setPadding(0, 10, 0, 5);
         return label;
     }
@@ -258,7 +277,7 @@ public class CardAdapter extends RecyclerView.Adapter<CardAdapter.CardViewHolder
         GradientDrawable background = new GradientDrawable();
         background.setColor(Color.WHITE);
         background.setCornerRadius(10);
-        background.setStroke(1, Color.GRAY);
+        background.setStroke(3, Color.GRAY);
         editText.setBackground(background);
         editText.setTextColor(Color.BLUE);
     }
@@ -278,6 +297,19 @@ public class CardAdapter extends RecyclerView.Adapter<CardAdapter.CardViewHolder
         this.mainActivity.currentConfig.setBatches(Integer.parseInt(((EditText) layout.getChildAt(3)).getText().toString()));
         this.mainActivity.currentConfig.setBatchSize(Integer.parseInt(((EditText) layout.getChildAt(5)).getText().toString()));
         this.mainActivity.currentConfig.setDimensions(TypeConverter.stringToList(((EditText) layout.getChildAt(7)).getText().toString()));
+    }
+
+    private void applyButtonStyling(AlertDialog dialog) {
+        // Access the buttons and apply the custom style
+        dialog.getButton(AlertDialog.BUTTON_POSITIVE).setTextColor(context.getResources().getColor(android.R.color.holo_green_dark));
+        dialog.getButton(AlertDialog.BUTTON_NEGATIVE).setTextColor(context.getResources().getColor(android.R.color.holo_green_dark));
+
+        dialog.getButton(AlertDialog.BUTTON_POSITIVE).setTextSize(18);  // Make the text size larger
+        dialog.getButton(AlertDialog.BUTTON_NEGATIVE).setTextSize(18);  // Make the text size larger
+
+        // Apply padding for bigger buttons (optional)
+        dialog.getButton(AlertDialog.BUTTON_POSITIVE).setPadding(10, 10, 10, 10);
+        dialog.getButton(AlertDialog.BUTTON_NEGATIVE).setPadding(10, 10, 10, 10);
     }
 
 }
