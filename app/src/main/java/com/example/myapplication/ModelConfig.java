@@ -8,7 +8,7 @@ public class ModelConfig {
     private int epochs;
     private int batches;
     private int batchSize;
-    private List<Integer> dimensions;
+    private String dimensions;
     private String modelLink;
     private String labelsLink;
     private String featuresLink;
@@ -47,11 +47,11 @@ public class ModelConfig {
         this.batchSize = batchSize;
     }
 
-    public List<Integer> getDimensions() {
+    public String getDimensions() {
         return dimensions;
     }
 
-    public void setDimensions(List<Integer> dimensions) {
+    public void setDimensions(String dimensions) {
         this.dimensions = dimensions;
     }
 

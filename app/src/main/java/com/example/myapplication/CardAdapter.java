@@ -296,7 +296,7 @@ public class CardAdapter extends RecyclerView.Adapter<CardAdapter.CardViewHolder
         this.mainActivity.currentConfig.setEpochs(Integer.parseInt(((EditText) layout.getChildAt(1)).getText().toString()));
         this.mainActivity.currentConfig.setBatches(Integer.parseInt(((EditText) layout.getChildAt(3)).getText().toString()));
         this.mainActivity.currentConfig.setBatchSize(Integer.parseInt(((EditText) layout.getChildAt(5)).getText().toString()));
-        this.mainActivity.currentConfig.setDimensions(TypeConverter.stringToList(((EditText) layout.getChildAt(7)).getText().toString()));
+        this.mainActivity.currentConfig.setDimensions(((EditText) layout.getChildAt(7)).getText().toString());
     }
 
     private void applyButtonStyling(AlertDialog dialog) {

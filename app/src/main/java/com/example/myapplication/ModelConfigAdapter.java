@@ -31,7 +31,7 @@ public class ModelConfigAdapter extends RecyclerView.Adapter<ModelConfigAdapter.
         holder.epochsText.setText("Epochs: " + modelConfig.getEpochs());
         holder.batchesText.setText("Batches: " + modelConfig.getBatches());
         holder.batchSizeText.setText("Batch Size: " + modelConfig.getBatchSize());
-        holder.dimensionsText.setText("Dimensions: " + TypeConverter.listToString(modelConfig.getDimensions()));
+        holder.dimensionsText.setText("Dimensions: " + modelConfig.getDimensions());
         holder.modelLinkText.setText("Model Link: " + modelConfig.getModelLink());
         holder.datasetLinkText.setText("Features Link: " + modelConfig.getFeaturesLink());
         holder.datasetLinkText.setText("Labels Link: " + modelConfig.getLabelsLink());
