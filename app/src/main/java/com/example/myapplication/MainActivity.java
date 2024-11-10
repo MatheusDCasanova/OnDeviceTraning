@@ -202,27 +202,27 @@ public class MainActivity extends AppCompatActivity {
                     tfliteInterpreter = new Interpreter(modelFile);  // Fallback to CPU
                 }
 
-                List<FloatBuffer> trainImageBatches = new ArrayList<>(NUM_BATCHES);
-                List<FloatBuffer> trainLabelBatches = new ArrayList<>(NUM_BATCHES);
+                List<FloatBuffer> trainImageBatches = new ArrayList<>(currentConfig.getBatches());
+                List<FloatBuffer> trainLabelBatches = new ArrayList<>(currentConfig.getBatches());
 
                 int FLATTENED_FEATURES_SIZE = 1;
-                for (int dimension : dimensions){
+                for (int dimension : TypeConverter.stringToList(currentConfig.getDimensions())){
                     FLATTENED_FEATURES_SIZE *= dimension;
                 }
 
-                int LABELS_SIZE = tfliteInterpreter.getOutputTensor(0).numBytes() / (4*BATCH_SIZE);
+                int LABELS_SIZE = tfliteInterpreter.getOutputTensor(0).numBytes() / (Float.BYTES*currentConfig.getBatchSize());
 
                 // Prepare training batches.
-                for (int i = 0; i < NUM_BATCHES; i++) {
+                for (int i = 0; i < currentConfig.getBatches(); i++) {
                     Log.d("I", "Counter: " + i);
-                    ByteBuffer  trainFeatures = ByteBuffer.allocateDirect(BATCH_SIZE * FLATTENED_FEATURES_SIZE * 4).order(ByteOrder.nativeOrder());
+                    ByteBuffer  trainFeatures = ByteBuffer.allocateDirect(currentConfig.getBatchSize() * FLATTENED_FEATURES_SIZE * 4).order(ByteOrder.nativeOrder());
                     FloatBuffer trainFeaturesFloat = trainFeatures.asFloatBuffer();
-                    ByteBuffer trainLabels = ByteBuffer.allocateDirect(BATCH_SIZE * LABELS_SIZE * 4).order(ByteOrder.nativeOrder());
+                    ByteBuffer trainLabels = ByteBuffer.allocateDirect(currentConfig.getBatchSize() * LABELS_SIZE * 4).order(ByteOrder.nativeOrder());
                     FloatBuffer trainLabelsFloat = trainLabels.asFloatBuffer();
 
                     // Slice the required portion from featuresBuffer for this batch
-                    int features_start = i * BATCH_SIZE * FLATTENED_FEATURES_SIZE;
-                    int features_end = features_start + BATCH_SIZE * FLATTENED_FEATURES_SIZE;
+                    int features_start = i * currentConfig.getBatchSize() * FLATTENED_FEATURES_SIZE;
+                    int features_end = features_start + currentConfig.getBatchSize() * FLATTENED_FEATURES_SIZE;
                     FloatBuffer featuresBatchSlice = featuresBuffer.duplicate();  // Duplicate to avoid modifying original buffer position
                     featuresBatchSlice.position(features_start);
                     featuresBatchSlice.limit(features_end);
@@ -232,8 +232,8 @@ public class MainActivity extends AppCompatActivity {
                     // Copy the sliced data to trainFeaturesFloat
                     trainFeaturesFloat.put(featuresBatchSlice);
 
-                    int labels_start = i * BATCH_SIZE * LABELS_SIZE;
-                    int labels_end = labels_start + BATCH_SIZE * LABELS_SIZE;
+                    int labels_start = i * currentConfig.getBatchSize() * LABELS_SIZE;
+                    int labels_end = labels_start + currentConfig.getBatchSize() * LABELS_SIZE;
                     FloatBuffer labelsBatchSlice = labelsBuffer.duplicate();  // Duplicate to avoid modifying original buffer position
                     labelsBatchSlice.position(labels_start);
                     labelsBatchSlice.limit(labels_end);
@@ -252,15 +252,15 @@ public class MainActivity extends AppCompatActivity {
                 }
 
                 // Run training for a few steps.
-                float[] losses = new float[NUM_EPOCHS];
+                float[] losses = new float[currentConfig.getEpochs()];
 
                 startTime = System.currentTimeMillis();
                 BatteryManager mBatteryManager = (BatteryManager) this.getSystemService(Context.BATTERY_SERVICE);
                 Long start_charge = mBatteryManager.getLongProperty(BatteryManager.BATTERY_PROPERTY_CHARGE_COUNTER);
 
-                for (int epoch = 0; epoch < NUM_EPOCHS; ++epoch) {
+                for (int epoch = 0; epoch < currentConfig.getEpochs(); ++epoch) {
                     FloatBuffer loss = FloatBuffer.allocate(4).put(1);
-                    for (int batchIdx = 0; batchIdx < NUM_BATCHES; ++batchIdx) {
+                    for (int batchIdx = 0; batchIdx < currentConfig.getBatches(); ++batchIdx) {
                         Map<String, Object> inputs = new HashMap<>();
                         inputs.put("x", trainImageBatches.get(batchIdx));
                         inputs.put("y", trainLabelBatches.get(batchIdx));
@@ -272,7 +272,7 @@ public class MainActivity extends AppCompatActivity {
                         tfliteInterpreter.runSignature(inputs, outputs, "train");
 
                         // Record the last loss.
-                        if (batchIdx == NUM_BATCHES - 1) losses[epoch] = loss.get(0);
+                        if (batchIdx == currentConfig.getBatches() - 1) losses[epoch] = loss.get(0);
                     }
 
                     System.out.println("Finished " + (epoch + 1) + " epochs, current loss: " + loss.get(0));
@@ -280,17 +280,17 @@ public class MainActivity extends AppCompatActivity {
 
                 IntentFilter filter = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
                 Intent batteryStatus = this.registerReceiver(null, filter);
-                int voltageMillivolts = batteryStatus.getIntExtra(BatteryManager.EXTRA_VOLTAGE, -1);
+                int voltageMilivolts = batteryStatus.getIntExtra(BatteryManager.EXTRA_VOLTAGE, -1);
 
                 Long finish_charge = mBatteryManager.getLongProperty(BatteryManager.BATTERY_PROPERTY_CHARGE_COUNTER);
 
                 Long consumed_charge = start_charge - finish_charge;
 
-                Log.d("ENERGY", "Millivolts " + (double) voltageMillivolts);
+                Log.d("ENERGY", "Millivolts " + (double) voltageMilivolts);
 
                 Log.d("ENERGY", "Microampere hour " + consumed_charge);
 
-                double energy = calculateEnergy(consumed_charge, voltageMillivolts);
+                double energy = calculateEnergy(consumed_charge, voltageMilivolts);
 
                 Log.d("ENERGY", "Joules " + energy);
 

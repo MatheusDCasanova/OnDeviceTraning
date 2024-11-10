@@ -115,8 +115,8 @@ public class CardAdapter extends RecyclerView.Adapter<CardAdapter.CardViewHolder
     }
 
     private void updateDataset(LinearLayout layout) {
-        fileDownloader.downloadFile(featuresUrl, "Features", false, null);
-        fileDownloader.downloadFile(labelsUrl, "Labels", false, null);
+        fileDownloader.downloadFile(featuresUrl, "Features", false, null, true);
+        fileDownloader.downloadFile(labelsUrl, "Labels", false, null, true);
     }
 
     private void setDatasetTextView(CardViewHolder holder) {
@@ -176,11 +176,11 @@ public class CardAdapter extends RecyclerView.Adapter<CardAdapter.CardViewHolder
                     setConfigurationsTextView(holder);
                 })
                 .setNegativeButton("Cancel", (dialog, which) -> dialog.cancel());
-        AlertDialog dialog = builder.create();
-        dialog.show();
+        AlertDialog ok_cancel_dialog = builder.create();
+        ok_cancel_dialog.show();
         setConfigurationsTextView(holder);
 
-        applyButtonStyling(dialog);
+        applyButtonStyling(ok_cancel_dialog);
     }
 
     private void showModelDialog(CardViewHolder holder) {
@@ -219,7 +219,7 @@ public class CardAdapter extends RecyclerView.Adapter<CardAdapter.CardViewHolder
         modelUrl = ((EditText) layout.getChildAt(1)).getText().toString();
         this.mainActivity.currentConfig.setModelLink(modelUrl);
         this.mainActivity.modelFile = new File(this.context.getFilesDir(), "model.tflite");
-        fileDownloader.downloadFile(modelUrl, "Model", true, this.mainActivity.modelFile);
+        fileDownloader.downloadFile(modelUrl, "Model", true, this.mainActivity.modelFile, false);
     }
 
     private LinearLayout createConfigurationsLayout() {
@@ -228,16 +228,16 @@ public class CardAdapter extends RecyclerView.Adapter<CardAdapter.CardViewHolder
         layout.setPadding(20, 20, 20, 20);
 
         layout.addView(createLabel("Number of epochs:"));
-        layout.addView(createNumberInput(this.mainActivity.NUM_EPOCHS));
+        layout.addView(createNumberInput(this.mainActivity.currentConfig.getEpochs()));
 
         layout.addView(createLabel("Number of batches:"));
-        layout.addView(createNumberInput(this.mainActivity.NUM_BATCHES));
+        layout.addView(createNumberInput(this.mainActivity.currentConfig.getBatches()));
 
         layout.addView(createLabel("Batch Size:"));
-        layout.addView(createNumberInput(this.mainActivity.BATCH_SIZE));
+        layout.addView(createNumberInput(this.mainActivity.currentConfig.getBatchSize()));
 
         layout.addView(createLabel("Feature Dimensions:"));
-        layout.addView(createNumberInputList(this.mainActivity.dimensions));
+        layout.addView(createNumberInputList(TypeConverter.stringToList(this.mainActivity.currentConfig.getDimensions())));
 
         return layout;
     }
@@ -284,10 +284,10 @@ public class CardAdapter extends RecyclerView.Adapter<CardAdapter.CardViewHolder
 
     private void setConfigurationsTextView(CardViewHolder holder) {
         configsString = "<b>Configuration Details</b><br>" +
-                "<font color='#4CAF50'>Epochs:</font> " + this.mainActivity.NUM_EPOCHS + "<br>" +
-                "<font color='#4CAF50'>Batches:</font> " + this.mainActivity.NUM_BATCHES + "<br>" +
-                "<font color='#4CAF50'>Batch Size:</font> " + this.mainActivity.BATCH_SIZE + "<br>" +
-                "<font color='#4CAF50'>Dimensions:</font> " + TypeConverter.listToString(this.mainActivity.dimensions);
+                "<font color='#4CAF50'>Epochs:</font> " + this.mainActivity.currentConfig.getEpochs() + "<br>" +
+                "<font color='#4CAF50'>Batches:</font> " + this.mainActivity.currentConfig.getBatches() + "<br>" +
+                "<font color='#4CAF50'>Batch Size:</font> " + this.mainActivity.currentConfig.getBatchSize() + "<br>" +
+                "<font color='#4CAF50'>Dimensions:</font> " + this.mainActivity.currentConfig.getDimensions();
         holder.contentTextView.setText(Html.fromHtml(configsString, Html.FROM_HTML_MODE_LEGACY));
     }
 

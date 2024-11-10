@@ -32,7 +32,7 @@ public class FileDownloader {
         mainActivity = this.mainActivity;
     }
 
-    public void downloadFile(String url, String fileType, boolean isModel, File saveFile) {
+    public void downloadFile(String url, String fileType, boolean isModel, File saveFile, boolean replicateSingleFeature) {
         Log.d("mainActivity", String.valueOf(mainActivity));
         mainActivity.setTvStatus("Downloading " + fileType + "...");
         mainActivity.downloadProgressBar.setVisibility(View.VISIBLE);
@@ -96,6 +96,17 @@ public class FileDownloader {
                         datasetBuffer.order(ByteOrder.nativeOrder());
                         mainActivity.runOnUiThread(() -> mainActivity.setTvStatus(fileType + " Downloaded"));
 
+                        if (replicateSingleFeature) {
+                            // replicate datasetBuffer's content NUM_BATCHES X BATCH_SIZE times
+                            /*ByteBuffer replicatedBuffer = ByteBuffer.allocate(BATCH_SIZE * NUM_BATCHES * Float.BYTES).order(ByteOrder.nativeOrder());
+                            for (int i = 0; i < NUM_BATCHES * BATCH_SIZE; i++) {
+                                // Copy the original data into the replicated buffer
+                                replicatedBuffer.put(datasetBuffer.array());
+                            }
+
+                            // Reset the position of the buffer to allow reading from the start
+                            replicatedBuffer.flip();*/
+                        }
                         if (fileType.equals("Features")) {
                             mainActivity.featuresBuffer = datasetBuffer.asFloatBuffer();
                             Log.d("Size", fileType + " " + mainActivity.featuresBuffer.capacity());

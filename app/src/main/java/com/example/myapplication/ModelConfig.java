@@ -1,14 +1,16 @@
 package com.example.myapplication;
 
 import java.io.File;
+import java.lang.reflect.Type;
 import java.nio.FloatBuffer;
 import java.util.List;
+import com.example.myapplication.TypeConverter;
 
 public class ModelConfig {
-    private int epochs;
-    private int batches;
-    private int batchSize;
-    private String dimensions;
+    private int epochs=1;
+    private int batches=100;
+    private int batchSize=64;
+    private String dimensions = TypeConverter.listToString(List.of(28,28));
     private String modelLink;
     private String labelsLink;
     private String featuresLink;
