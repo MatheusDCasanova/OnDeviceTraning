@@ -286,7 +286,7 @@ public class MainActivity extends AppCompatActivity {
 
                 Long consumed_charge = start_charge - finish_charge;
 
-                Log.d("ENERGY", "Millivolts " + (double) voltageMilivolts);
+                Log.d("ENERGY", "Milivolts " + (double) voltageMilivolts);
 
                 Log.d("ENERGY", "Microampere hour " + consumed_charge);
 

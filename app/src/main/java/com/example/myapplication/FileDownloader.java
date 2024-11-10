@@ -34,6 +34,7 @@ public class FileDownloader {
 
     public void downloadFile(String url, String fileType, boolean isModel, File saveFile, boolean replicateSingleFeature) {
         Log.d("mainActivity", String.valueOf(mainActivity));
+        Log.d("DownloadLink", "Download LINK: " + url);
         mainActivity.setTvStatus("Downloading " + fileType + "...");
         mainActivity.downloadProgressBar.setVisibility(View.VISIBLE);
         mainActivity.downloadProgressBar.setProgress(0);
@@ -97,15 +98,22 @@ public class FileDownloader {
                         mainActivity.runOnUiThread(() -> mainActivity.setTvStatus(fileType + " Downloaded"));
 
                         if (replicateSingleFeature) {
+                            int DATA_SIZE = datasetBuffer.capacity();
+                            Log.d("Single data size", DATA_SIZE + " bytes");
                             // replicate datasetBuffer's content NUM_BATCHES X BATCH_SIZE times
-                            /*ByteBuffer replicatedBuffer = ByteBuffer.allocate(BATCH_SIZE * NUM_BATCHES * Float.BYTES).order(ByteOrder.nativeOrder());
-                            for (int i = 0; i < NUM_BATCHES * BATCH_SIZE; i++) {
+                            ByteBuffer replicatedBuffer = ByteBuffer.allocate(
+                                    mainActivity.currentConfig.getBatchSize()
+                                            * mainActivity.currentConfig.getBatches()
+                                            * DATA_SIZE
+                                        ).order(ByteOrder.nativeOrder());
+                            for (int i = 0; i < mainActivity.currentConfig.getBatches() * mainActivity.currentConfig.getBatchSize(); i++) {
                                 // Copy the original data into the replicated buffer
                                 replicatedBuffer.put(datasetBuffer.array());
                             }
 
                             // Reset the position of the buffer to allow reading from the start
-                            replicatedBuffer.flip();*/
+                            replicatedBuffer.flip();
+                            datasetBuffer = replicatedBuffer;
                         }
                         if (fileType.equals("Features")) {
                             mainActivity.featuresBuffer = datasetBuffer.asFloatBuffer();
