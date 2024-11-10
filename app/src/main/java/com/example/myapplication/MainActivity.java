@@ -323,7 +323,7 @@ public class MainActivity extends AppCompatActivity {
         if (configs == null) {
             configs = new ArrayList<>();
         }
-        configs.add(currentConfig);
+        configs.add(0, currentConfig);
         historyManager.saveListToJsonFile(configs);
         historyManager.printJsonFileContent();
     }

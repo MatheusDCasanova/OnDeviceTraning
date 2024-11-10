@@ -24,7 +24,6 @@ import java.util.List;
 public class HistoryActivity extends AppCompatActivity {
 
     private Button btnBack; // Declare the button here
-    private Button btnShare;
     private RecyclerView recyclerView;
     private HistoryManager historyManager;
     private ModelConfigAdapter adapter;
@@ -96,23 +95,4 @@ public class HistoryActivity extends AppCompatActivity {
             Toast.makeText(this, "History file not found!", Toast.LENGTH_SHORT).show();
         }
     }
-
-    private String loadJsonFromFile(String fileName) {
-        StringBuilder jsonStringBuilder = new StringBuilder();
-        try {
-            FileInputStream fis = openFileInput(fileName);
-            BufferedReader reader = new BufferedReader(new InputStreamReader(fis));
-            String line;
-            while ((line = reader.readLine()) != null) {
-                jsonStringBuilder.append(line);
-            }
-            reader.close();
-        } catch (Exception e) {
-            e.printStackTrace();
-            return null;
-        }
-        return jsonStringBuilder.toString();
-    }
-
-
 }
