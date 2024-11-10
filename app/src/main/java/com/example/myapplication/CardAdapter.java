@@ -5,6 +5,7 @@ import android.graphics.Color;
 import android.graphics.drawable.GradientDrawable;
 import android.text.Html;
 import android.text.method.LinkMovementMethod;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -34,9 +35,9 @@ public class CardAdapter extends RecyclerView.Adapter<CardAdapter.CardViewHolder
     private String configsString = "";
     private boolean replicateSingleFeature = false;
 
-    private List<String> titles = Arrays.asList("Configurations", "Dataset", "Model", "Last Training info");
+    private List<String> titles = Arrays.asList("Configurations", "Model", "Dataset", "Last Training info");
     private List<String> contents = Arrays.asList("Content for card 1", "Content for card 2", "no info", "no info");
-    private List<String> buttonNames = Arrays.asList("set Configurations", "set Dataset", "set Model", "show History");
+    private List<String> buttonNames = Arrays.asList("set Configurations", "set Model", "set Dataset", "show History");
 
     public FileDownloader fileDownloader;
 
@@ -69,20 +70,20 @@ public class CardAdapter extends RecyclerView.Adapter<CardAdapter.CardViewHolder
                 });
                 break;
             case 1:
-                String formattedText = "labels URL: <a href=" +labelsUrl+ ">labels</a><br>"
-                        + "features URL: <a href=" +featuresUrl+ ">features</a>";
+                holder.contentTextView.setText(Html.fromHtml("<a href=" + mainActivity.currentConfig.getModelLink() + ">model</a>\n", Html.FROM_HTML_MODE_LEGACY));
+                holder.nextButton.setOnClickListener(v -> {
+                    showModelDialog(holder);
+                });
+                holder.contentTextView.setMovementMethod(LinkMovementMethod.getInstance());
+                break;
+            case 2:
+                String formattedText = "labels URL: <a href=" +mainActivity.currentConfig.getLabelsLink()+ ">labels</a><br>"
+                        + "features URL: <a href=" +mainActivity.currentConfig.getFeaturesLink()+ ">features</a>";
                 holder.contentTextView.setText(Html.fromHtml(formattedText, Html.FROM_HTML_MODE_LEGACY));
                 holder.contentTextView.setMovementMethod(LinkMovementMethod.getInstance());
                 holder.nextButton.setOnClickListener(v -> {
                     showDatasetDialog(holder);
                 });
-                break;
-            case 2:
-                holder.contentTextView.setText(Html.fromHtml("<a href=" +modelUrl+ ">model</a>\n", Html.FROM_HTML_MODE_LEGACY));
-                holder.nextButton.setOnClickListener(v -> {
-                    showModelDialog(holder);
-                });
-                holder.contentTextView.setMovementMethod(LinkMovementMethod.getInstance());
                 break;
             case 3:
                 lastTrainingInfo = this.mainActivity.getLastTrainingInfo();
@@ -115,13 +116,20 @@ public class CardAdapter extends RecyclerView.Adapter<CardAdapter.CardViewHolder
     }
 
     private void updateDataset(LinearLayout layout) {
-        fileDownloader.downloadFile(featuresUrl, "Features", false, null, true);
-        fileDownloader.downloadFile(labelsUrl, "Labels", false, null, true);
+        featuresUrl = ((EditText) layout.getChildAt(1)).getText().toString();
+        this.mainActivity.currentConfig.setFeaturesLink(featuresUrl);
+
+        labelsUrl = ((EditText) layout.getChildAt(3)).getText().toString();
+        this.mainActivity.currentConfig.setLabelsLink(labelsUrl);
+
+        fileDownloader.downloadFile(mainActivity.currentConfig.getFeaturesLink(), "Features", false, null, replicateSingleFeature);
+        fileDownloader.downloadFile(mainActivity.currentConfig.getLabelsLink(), "Labels", false, null, replicateSingleFeature);
+        Log.d("replicateFeat", " "+replicateSingleFeature);
     }
 
     private void setDatasetTextView(CardViewHolder holder) {
-        String formattedText = "labels URL: <a href=" +labelsUrl+ ">labels</a><br>"
-                + "features URL: <a href=" +featuresUrl+ ">features</a>";
+        String formattedText = "labels URL: <a href=" +mainActivity.currentConfig.getLabelsLink()+ ">labels</a><br>"
+                + "features URL: <a href=" +mainActivity.currentConfig.getFeaturesLink()+ ">features</a>";
         holder.contentTextView.setMovementMethod(LinkMovementMethod.getInstance());
         holder.contentTextView.setText(Html.fromHtml(formattedText, Html.FROM_HTML_MODE_LEGACY));
     }
@@ -199,7 +207,7 @@ public class CardAdapter extends RecyclerView.Adapter<CardAdapter.CardViewHolder
     }
 
     private void setModelTextView(CardViewHolder holder) {
-        String formattedText = "<a href=" +modelUrl+ ">model</a>\n";
+        String formattedText = "<a href=" +mainActivity.currentConfig.getModelLink()+ ">model</a>\n";
         holder.contentTextView.setMovementMethod(LinkMovementMethod.getInstance());
         holder.contentTextView.setText(Html.fromHtml(formattedText, Html.FROM_HTML_MODE_LEGACY));
     }
@@ -210,7 +218,7 @@ public class CardAdapter extends RecyclerView.Adapter<CardAdapter.CardViewHolder
         layout.setPadding(20, 20, 20, 20);
 
         layout.addView(createLabel("Model URL:"));
-        layout.addView(createStringInput(modelUrl));
+        layout.addView(createStringInput(mainActivity.currentConfig.getModelLink()));
 
         return layout;
     }
