@@ -1,17 +1,28 @@
 package com.example.myapplication;
 
+import java.io.File;
+import java.nio.FloatBuffer;
+import java.util.List;
+
 public class ModelConfig {
     private int epochs;
     private int batches;
     private int batchSize;
-    private String dimensions;
+    private List<Integer> dimensions;
     private String modelLink;
-    private String datasetLink;
+    private String labelsLink;
+    private String featuresLink;
     private int time;
+
+    public ModelConfig() {
+        // Default constructor
+    }
 
     private double energy;
 
     // Getters and Setters
+
+
     public int getEpochs() {
         return epochs;
     }
@@ -36,11 +47,11 @@ public class ModelConfig {
         this.batchSize = batchSize;
     }
 
-    public String getDimensions() {
+    public List<Integer> getDimensions() {
         return dimensions;
     }
 
-    public void setDimensions(String dimensions) {
+    public void setDimensions(List<Integer> dimensions) {
         this.dimensions = dimensions;
     }
 
@@ -52,12 +63,20 @@ public class ModelConfig {
         this.modelLink = modelLink;
     }
 
-    public String getDatasetLink() {
-        return datasetLink;
+    public String getFeaturesLink() {
+        return featuresLink;
     }
 
-    public void setDatasetLink(String datasetLink) {
-        this.datasetLink = datasetLink;
+    public void setFeaturesLink(String datasetLink) {
+        this.featuresLink = featuresLink;
+    }
+
+    public String getLabelsLink() {
+        return labelsLink;
+    }
+
+    public void setLabelsLink(String labelsLink) {
+        this.labelsLink = labelsLink;
     }
 
     public int getTime() {

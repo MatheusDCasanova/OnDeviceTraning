@@ -1,8 +1,6 @@
 package com.example.myapplication;// CardAdapter.java
-import static androidx.core.content.ContextCompat.startActivity;
 
 import android.content.Context;
-import android.content.Intent;
 import android.graphics.Color;
 import android.graphics.drawable.GradientDrawable;
 import android.text.Html;
@@ -19,8 +17,6 @@ import androidx.appcompat.app.AlertDialog;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.viewpager2.widget.ViewPager2;
 
-import org.json.JSONArray;
-
 import java.io.File;
 import java.util.Arrays;
 import java.util.List;
@@ -29,27 +25,24 @@ import java.util.stream.Collectors;
 public class CardAdapter extends RecyclerView.Adapter<CardAdapter.CardViewHolder> {
     private MainActivity mainActivity;
     private final Context context;
-    private final List<String> buttonNames;
-    private List<String> cardTitles;
-    private List<String> cardContents;
     private ViewPager2 viewPager; // Reference to ViewPager2
-    List<Integer> dimensions = List.of(28,28);
-    private int BATCH_SIZE = 64;
-    private int NUM_BATCHES = 100;
-    private int NUM_EPOCHS = 1;
     private String modelUrl = "https://github.com/MatheusDCasanova/OnDeviceTraning/raw/refs/heads/master/model_mnist_fixed_batch_size.tflite";
     private String featuresUrl = "https://github.com/MatheusDCasanova/OnDeviceTraning/raw/refs/heads/master/mnist_feats.bin";
     private String labelsUrl= "https://github.com/MatheusDCasanova/OnDeviceTraning/raw/refs/heads/master/mnist_labels.bin";
     private String lastTrainingInfo = "";
     private String configsString = "";
 
-    public CardAdapter(ViewPager2 viewPager, Context context, List<String> cardTitles, List<String> cardContents, List<String> buttonNames, MainActivity mainActivity) {
+    private List<String> titles = Arrays.asList("Model", "Dataset", "Configurations", "Last Training info");
+    private List<String> contents = Arrays.asList("Content for card 1", "Content for card 2", "no info", "no info");
+    private List<String> buttonNames = Arrays.asList("set Model", "set Dataset", "set Configurations", "show History");
+
+    public FileDownloader fileDownloader;
+
+    public CardAdapter(ViewPager2 viewPager, Context context, MainActivity mainActivity, TextView tvStatus) {
         this.viewPager = viewPager; // Initialize ViewPager2 reference
-        this.cardTitles = cardTitles;
-        this.cardContents = cardContents;
-        this.buttonNames = buttonNames;
         this.context = context;
         this.mainActivity = mainActivity;
+        fileDownloader = new FileDownloader(context, mainActivity, tvStatus, mainActivity.downloadProgressBar);
     }
 
     @NonNull
@@ -61,8 +54,8 @@ public class CardAdapter extends RecyclerView.Adapter<CardAdapter.CardViewHolder
 
     @Override
     public void onBindViewHolder(@NonNull CardViewHolder holder, int position) {
-        holder.titleTextView.setText(cardTitles.get(position));
-        holder.contentTextView.setText(cardContents.get(position));
+        holder.titleTextView.setText(titles.get(position));
+        holder.contentTextView.setText(contents.get(position));
         holder.nextButton.setText(buttonNames.get(position));
 
         switch (position) {
@@ -117,8 +110,8 @@ public class CardAdapter extends RecyclerView.Adapter<CardAdapter.CardViewHolder
     }
 
     private void updateDataset(LinearLayout layout) {
-        this.mainActivity.downloadFile(featuresUrl, "Features", false, null);
-        this.mainActivity.downloadFile(labelsUrl, "Labels", false, null);
+        fileDownloader.downloadFile(featuresUrl, "Features", false, null);
+        fileDownloader.downloadFile(labelsUrl, "Labels", false, null);
     }
 
     private void setDatasetTextView(CardViewHolder holder) {
@@ -144,7 +137,7 @@ public class CardAdapter extends RecyclerView.Adapter<CardAdapter.CardViewHolder
 
     @Override
     public int getItemCount() {
-        return cardTitles.size();
+        return titles.size();
     }
 
     static class CardViewHolder extends RecyclerView.ViewHolder {
@@ -205,8 +198,9 @@ public class CardAdapter extends RecyclerView.Adapter<CardAdapter.CardViewHolder
 
     private void updateModel(LinearLayout layout) {
         modelUrl = ((EditText) layout.getChildAt(1)).getText().toString();
+        this.mainActivity.currentConfig.setModelLink(modelUrl);
         this.mainActivity.modelFile = new File(this.context.getFilesDir(), "model.tflite");
-        this.mainActivity.downloadFile(modelUrl, "Model", true, this.mainActivity.modelFile);
+        fileDownloader.downloadFile(modelUrl, "Model", true, this.mainActivity.modelFile);
     }
 
     private LinearLayout createConfigurationsLayout() {
@@ -274,28 +268,16 @@ public class CardAdapter extends RecyclerView.Adapter<CardAdapter.CardViewHolder
                 "<font color='#4CAF50'>Epochs:</font> " + this.mainActivity.NUM_EPOCHS + "<br>" +
                 "<font color='#4CAF50'>Batches:</font> " + this.mainActivity.NUM_BATCHES + "<br>" +
                 "<font color='#4CAF50'>Batch Size:</font> " + this.mainActivity.BATCH_SIZE + "<br>" +
-                "<font color='#4CAF50'>Dimensions:</font> " + listToString(this.mainActivity.dimensions);
+                "<font color='#4CAF50'>Dimensions:</font> " + TypeConverter.listToString(this.mainActivity.dimensions);
         holder.contentTextView.setText(Html.fromHtml(configsString, Html.FROM_HTML_MODE_LEGACY));
-    }
-    private String listToString(List<Integer> numberList) {
-        return numberList.stream()
-                .map(String::valueOf)
-                .collect(Collectors.joining(","));
-    }
-
-    private List<Integer> stringToList(String numbers) {
-        return Arrays.stream(numbers.split(","))
-                .map(String::trim)
-                .map(Integer::parseInt)
-                .collect(Collectors.toList());
     }
 
 
     private void updateConfigurations(LinearLayout layout) {
-        this.mainActivity.NUM_EPOCHS = Integer.parseInt(((EditText) layout.getChildAt(1)).getText().toString());
-        this.mainActivity.NUM_BATCHES = Integer.parseInt(((EditText) layout.getChildAt(3)).getText().toString());
-        this.mainActivity.BATCH_SIZE = Integer.parseInt(((EditText) layout.getChildAt(5)).getText().toString());
-        this.mainActivity.dimensions = this.stringToList(((EditText) layout.getChildAt(7)).getText().toString());
+        this.mainActivity.currentConfig.setEpochs(Integer.parseInt(((EditText) layout.getChildAt(1)).getText().toString()));
+        this.mainActivity.currentConfig.setBatches(Integer.parseInt(((EditText) layout.getChildAt(3)).getText().toString()));
+        this.mainActivity.currentConfig.setBatchSize(Integer.parseInt(((EditText) layout.getChildAt(5)).getText().toString()));
+        this.mainActivity.currentConfig.setDimensions(TypeConverter.stringToList(((EditText) layout.getChildAt(7)).getText().toString()));
     }
 
 }

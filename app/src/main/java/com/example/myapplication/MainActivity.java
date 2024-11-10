@@ -64,22 +64,19 @@ import com.tbuonomo.viewpagerdotsindicator.DotsIndicator;
 
 public class MainActivity extends AppCompatActivity {
 
-    private static final String TAG = "MainActivity";
-    private String modelUrl = "https://github.com/MatheusDCasanova/OnDeviceTraning/raw/refs/heads/master/model_mnist_fixed_batch_size.tflite";
-    private String featuresUrl = "https://github.com/MatheusDCasanova/OnDeviceTraning/raw/refs/heads/master/mnist_feats.bin";
-    private String labelsUrl= "https://github.com/MatheusDCasanova/OnDeviceTraning/raw/refs/heads/master/mnist_labels.bin";
+    public static final String TAG = "MainActivity";
+
     public File modelFile;
-    private FloatBuffer featuresBuffer;
-    private FloatBuffer labelsBuffer;
+
+    public ModelConfig currentConfig;
+    public FloatBuffer featuresBuffer;
+    public FloatBuffer labelsBuffer;
     private String configsString;
-    private TextView tvStatus;
-    private TextView tvConfigurations;
-    private Button btnConfigurations;
-    private ImageView checkmarkConfigurations;
+    public TextView tvStatus;
+
     private Button btnSelectModel;
     private ImageView checkmarkSelectModel;
     private Button btnSelectDataset;
-    private ImageView checkmarkSelectDataset;
     private Button btnStartTraining;
 
     private Button btnShowHistory;
@@ -91,7 +88,7 @@ public class MainActivity extends AppCompatActivity {
 
     public int NUM_EPOCHS = 1;
 
-    private ProgressBar downloadProgressBar;
+    public ProgressBar downloadProgressBar;
 
     private DrawerLayout drawerLayout;
     public ViewPager2 viewPager;
@@ -102,15 +99,12 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-
+        currentConfig = new ModelConfig();
         initViews();
 
         //applyAnimations();
 
-//        btnSelectModel.setOnClickListener(v -> selectModel());
-//        btnSelectDataset.setOnClickListener(v -> selectDataset());
         btnStartTraining.setOnClickListener(v -> startTrainingIfReady());
-//        btnConfigurations.setOnClickListener(v -> showConfigurationsDialog());
         btnShowHistory.setOnClickListener(v -> { showHistory(); });
     }
 
@@ -118,7 +112,6 @@ public class MainActivity extends AppCompatActivity {
         Intent intent = new Intent(MainActivity.this, HistoryActivity.class);
         startActivity(intent);
     }
-
 
     private void initViews(){
         tvStatus = findViewById(R.id.tv_status);
@@ -133,11 +126,8 @@ public class MainActivity extends AppCompatActivity {
         viewPager = findViewById(R.id.viewPager);
 
         // Sample data for the cards
-        List<String> titles = Arrays.asList("Model", "Dataset", "Configurations", "Last Training info");
-        List<String> contents = Arrays.asList("Content for card 1", "Content for card 2", configsString, "no info");
-        List<String> buttonNames = Arrays.asList("set Model", "set Dataset", "set Configurations", "show History");
         DotsIndicator dotsIndicator = findViewById(R.id.dots_indicator);
-        adapter = new CardAdapter(viewPager, this, titles, contents, buttonNames, this);
+        adapter = new CardAdapter(viewPager, this,this, tvStatus);
         viewPager.setAdapter(adapter);
         dotsIndicator.setViewPager2(viewPager);
 
@@ -162,17 +152,6 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private void selectDataset(){
-        // Download dataset from URL
-        downloadFile(featuresUrl, "Features", false, null);
-        downloadFile(labelsUrl, "Labels", false, null);
-    }
-
-    private void selectModel(){
-        // Download model from URL
-        modelFile = new File(getFilesDir(), "model.tflite");
-        downloadFile(modelUrl, "Model", true, modelFile);
-    }
 
 
     private void applyAnimations() {
@@ -188,110 +167,15 @@ public class MainActivity extends AppCompatActivity {
         btnStartTraining.startAnimation(scaleUp);
     }
 
-    public void downloadFile(String url, String fileType, boolean isModel, File saveFile) {
-        tvStatus.setText("Downloading " + fileType + "...");
-        downloadProgressBar.setVisibility(View.VISIBLE);
-        downloadProgressBar.setProgress(0);
-
-        OkHttpClient client = new OkHttpClient();
-        Request request = new Request.Builder().url(url).build();
-
-        client.newCall(request).enqueue(new Callback() {
-            @Override
-            public void onFailure(Call call, IOException e) {
-                runOnUiThread(() -> {
-                    tvStatus.setText(fileType + " Download Failed: " + e.getMessage());
-                    downloadProgressBar.setVisibility(View.GONE);
-                    Log.e(TAG, fileType + " download failed", e);
-                });
-            }
-
-            @Override
-            public void onResponse(Call call, Response response) throws IOException {
-                if (!response.isSuccessful()) {
-                    runOnUiThread(() -> {
-                        tvStatus.setText(fileType + " Download Failed: " + response.message());
-                        downloadProgressBar.setVisibility(View.GONE);
-                    });
-                    return;
-                }
-
-                long totalBytes = response.body().contentLength();
-                long downloadedBytes = 0;
-                byte[] buffer = new byte[80000];
-                ByteArrayOutputStream byteStream = new ByteArrayOutputStream();
-
-                try (BufferedInputStream inputStream = new BufferedInputStream(response.body().byteStream())) {
-                    int read;
-                    while ((read = inputStream.read(buffer, 0, buffer.length)) != -1) {
-                        byteStream.write(buffer, 0, read);
-                        downloadedBytes += read;
-
-                        Log.d("DownloadInfo", fileType + " Bytes read: " + downloadedBytes + "/" + totalBytes);
-
-                        // Update progress
-                        int progress = (int) ((downloadedBytes * 100) / totalBytes);
-                        runOnUiThread(() -> downloadProgressBar.setProgress(progress));
-                    }
-                    byteStream.flush();
-                    byte[] data = byteStream.toByteArray();
-
-                    // For model files, save to disk
-                    if (isModel && saveFile != null) {
-                        try (FileOutputStream fos = new FileOutputStream(saveFile)) {
-                            fos.write(data);
-                            fos.flush();
-                            runOnUiThread(() -> tvStatus.setText(fileType + " Downloaded"));
-                        } catch (IOException e) {
-                            runOnUiThread(() -> tvStatus.setText("Error saving " + fileType + ": " + e.getMessage()));
-                        }
-                    } else if (!isModel) {
-                        // For datasets, wrap into ByteBuffer
-                        ByteBuffer datasetBuffer = ByteBuffer.wrap(data);
-                        datasetBuffer.order(ByteOrder.nativeOrder());
-                        runOnUiThread(() -> tvStatus.setText(fileType + " Downloaded"));
-
-                        if (fileType.equals("Features")) {
-                            featuresBuffer = datasetBuffer.asFloatBuffer();
-                            Log.d("Size", fileType + " " + featuresBuffer.capacity());
-                        } else {
-                            labelsBuffer = datasetBuffer.asFloatBuffer();
-                            Log.d("Size", fileType + " " + labelsBuffer.capacity());
-                        }
-                    }
-                } catch (IOException e) {
-                    runOnUiThread(() -> {
-                        tvStatus.setText("Error reading " + fileType + ": " + e.getMessage());
-                    });
-                } finally {
-                    runOnUiThread(() -> {
-                        downloadProgressBar.setVisibility(View.GONE);
-                    });
-
-                }
-            }
-        });
-    }
-
-    private String listToString(List<Integer> numberList) {
-        return numberList.stream()
-                .map(String::valueOf)
-                .collect(Collectors.joining(","));
-    }
-
-    private List<Integer> stringToList(String numbers) {
-        return Arrays.stream(numbers.split(","))
-                .map(String::trim)
-                .map(Integer::parseInt)
-                .collect(Collectors.toList());
-    }
-
     private double calculateEnergy(Long consumed_charge, int voltage){
         double float_charge = consumed_charge.doubleValue(); // microAmpere-hour
 
         return (float_charge/1e6) * (((double) voltage)/1e3) * 3600;
     }
 
+    public void setTvStatus(String text) {
+        this.tvStatus.setText(text);
+    }
 
     private void startTraining() {
         if (featuresBuffer == null || labelsBuffer == null) {
@@ -412,7 +296,7 @@ public class MainActivity extends AppCompatActivity {
 
                 long trainingTime = System.currentTimeMillis() - startTime;
 
-                ModelConfig config = saveToHistory(trainingTime, energy);
+                saveToHistory(trainingTime, energy);
 
                 runOnUiThread(() -> {
 
@@ -431,23 +315,17 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-    private ModelConfig saveToHistory(long trainingTime, double energy) {
-        ModelConfig config = new ModelConfig();
-        config.setBatches(NUM_BATCHES);
-        config.setEpochs(NUM_EPOCHS);
-        config.setDimensions(dimensions.toString());
-        config.setBatchSize(BATCH_SIZE);
-        config.setTime((int) trainingTime);
-        config.setEnergy(energy);
+    private void saveToHistory(long trainingTime, double energy) {
+        currentConfig.setTime((int) trainingTime);
+        currentConfig.setEnergy(energy);
         HistoryManager historyManager = new HistoryManager(this);
         List<ModelConfig> configs = historyManager.readJsonFileToList();
         if (configs == null) {
             configs = new ArrayList<>();
         }
-        configs.add(config);
+        configs.add(currentConfig);
         historyManager.saveListToJsonFile(configs);
         historyManager.printJsonFileContent();
-        return config;
     }
 
     public String getLastTrainingInfo() {
