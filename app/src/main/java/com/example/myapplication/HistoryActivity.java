@@ -5,6 +5,8 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
+import android.widget.ImageButton;
+import android.widget.PopupMenu;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
@@ -44,13 +46,31 @@ public class HistoryActivity extends AppCompatActivity {
         recyclerView.setAdapter(adapter);
         // Initialize the button after setting the content view
         btnBack = findViewById(R.id.back_button);
-        btnShare = findViewById(R.id.share_button);
+        ImageButton moreOptionsButton = findViewById(R.id.button_more_options);
+        moreOptionsButton.setOnClickListener(view -> {
+            PopupMenu popupMenu = new PopupMenu(this, view);
+            popupMenu.getMenuInflater().inflate(R.menu.main_menu, popupMenu.getMenu());
+            popupMenu.setOnMenuItemClickListener(item -> {
+                switch (item.getItemId()) {
+                    case R.id.share_history:
+                        shareHistory();
+                        return true;
+                    case R.id.clear_history:
+                        historyManager.saveListToJsonFile(new ArrayList<>());
+                        adapter.notifyDataSetChanged();
+                        return true;
+                    default:
+                        return false;
+                }
+            });
+            popupMenu.show();
+        });
+
 
         // Set the onClickListener for the button
         btnBack.setOnClickListener(v -> {
             backPressed(); // Call the showHistory() method when the button is clicked
         });
-        btnShare.setOnClickListener(v -> shareHistory());
     }
 
     private void backPressed() {

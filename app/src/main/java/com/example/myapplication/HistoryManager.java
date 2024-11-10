@@ -43,6 +43,10 @@ public class HistoryManager {
         }
     }
 
+    public void deleteJsonFile() {
+        File file = new File(getFilePath());
+    }
+
     private String getFilePath() {
         // Get the internal storage directory for the app
         File dir = context.getFilesDir();

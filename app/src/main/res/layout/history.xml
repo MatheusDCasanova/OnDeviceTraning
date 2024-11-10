@@ -13,11 +13,13 @@
         android:layout_alignParentStart="true"
         android:layout_marginEnd="8dp" /> <!-- Margin to separate buttons -->
 
-    <!-- Share Button aligned to the end (right) -->
-    <Button
-        android:id="@+id/share_button"
+    <!-- activity_main.xml -->
+    <ImageButton
+        android:id="@+id/button_more_options"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:src="@drawable/ic_menu"
+        android:contentDescription="More options"
         android:text="Share"
         android:layout_alignParentEnd="true" />
 
