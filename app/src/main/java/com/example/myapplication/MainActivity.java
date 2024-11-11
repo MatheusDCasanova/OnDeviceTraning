@@ -334,7 +334,7 @@ public class MainActivity extends AppCompatActivity {
         if (configs == null || configs.isEmpty()) {
             return "";
         }
-        ModelConfig config = configs.get(configs.size() - 1);
+        ModelConfig config = configs.get(0);
         return"<font color='#4CAF50'>Epochs:</font> " + config.getEpochs() + "<br>" +
                 "<font color='#4CAF50'>Batches:</font> " + config.getBatches() + "<br>" +
                 "<font color='#4CAF50'>Batch Size:</font> " +config.getBatchSize() + "<br>" +
