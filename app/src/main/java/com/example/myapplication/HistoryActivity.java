@@ -5,6 +5,8 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
+import android.widget.ImageButton;
+import android.widget.PopupMenu;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
@@ -22,7 +24,6 @@ import java.util.List;
 public class HistoryActivity extends AppCompatActivity {
 
     private Button btnBack; // Declare the button here
-    private Button btnShare;
     private RecyclerView recyclerView;
     private HistoryManager historyManager;
     private ModelConfigAdapter adapter;
@@ -44,13 +45,31 @@ public class HistoryActivity extends AppCompatActivity {
         recyclerView.setAdapter(adapter);
         // Initialize the button after setting the content view
         btnBack = findViewById(R.id.back_button);
-        btnShare = findViewById(R.id.share_button);
+        ImageButton moreOptionsButton = findViewById(R.id.button_more_options);
+        moreOptionsButton.setOnClickListener(view -> {
+            PopupMenu popupMenu = new PopupMenu(this, view);
+            popupMenu.getMenuInflater().inflate(R.menu.main_menu, popupMenu.getMenu());
+            popupMenu.setOnMenuItemClickListener(item -> {
+                switch (item.getItemId()) {
+                    case R.id.share_history:
+                        shareHistory();
+                        return true;
+                    case R.id.clear_history:
+                        historyManager.saveListToJsonFile(new ArrayList<>());
+                        adapter.notifyDataSetChanged();
+                        return true;
+                    default:
+                        return false;
+                }
+            });
+            popupMenu.show();
+        });
+
 
         // Set the onClickListener for the button
         btnBack.setOnClickListener(v -> {
             backPressed(); // Call the showHistory() method when the button is clicked
         });
-        btnShare.setOnClickListener(v -> shareHistory());
     }
 
     private void backPressed() {
@@ -76,23 +95,4 @@ public class HistoryActivity extends AppCompatActivity {
             Toast.makeText(this, "History file not found!", Toast.LENGTH_SHORT).show();
         }
     }
-
-    private String loadJsonFromFile(String fileName) {
-        StringBuilder jsonStringBuilder = new StringBuilder();
-        try {
-            FileInputStream fis = openFileInput(fileName);
-            BufferedReader reader = new BufferedReader(new InputStreamReader(fis));
-            String line;
-            while ((line = reader.readLine()) != null) {
-                jsonStringBuilder.append(line);
-            }
-            reader.close();
-        } catch (Exception e) {
-            e.printStackTrace();
-            return null;
-        }
-        return jsonStringBuilder.toString();
-    }
-
-
 }

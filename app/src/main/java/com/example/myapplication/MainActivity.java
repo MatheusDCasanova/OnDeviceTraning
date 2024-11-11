@@ -21,6 +21,7 @@ import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.view.GravityCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
+import androidx.viewpager2.widget.ViewPager2;
 
 import java.util.Arrays;
 import java.util.List;
@@ -57,77 +58,78 @@ import java.util.ArrayList;
 
 import android.content.IntentFilter;
 
+import com.google.android.material.tabs.TabLayout;
+import com.google.android.material.tabs.TabLayoutMediator;
+import com.tbuonomo.viewpagerdotsindicator.DotsIndicator;
+
 public class MainActivity extends AppCompatActivity {
 
-    private static final String TAG = "MainActivity";
-    private String modelUrl = "https://github.com/MatheusDCasanova/OnDeviceTraning/raw/refs/heads/master/model_mnist_fixed_batch_size.tflite";
-    private String featuresUrl = "https://github.com/MatheusDCasanova/OnDeviceTraning/raw/refs/heads/master/mnist_feats.bin";
-    private String labelsUrl= "https://github.com/MatheusDCasanova/OnDeviceTraning/raw/refs/heads/master/mnist_labels.bin";
-    private File modelFile;
-    private FloatBuffer featuresBuffer;
-    private FloatBuffer labelsBuffer;
+    public static final String TAG = "MainActivity";
 
-    private TextView tvStatus;
-    private TextView tvConfigurations;
-    private Button btnConfigurations;
-    private ImageView checkmarkConfigurations;
+    public File modelFile;
+
+    public ModelConfig currentConfig;
+    public FloatBuffer featuresBuffer;
+    public FloatBuffer labelsBuffer;
+    private String configsString;
+    public TextView tvStatus;
+
     private Button btnSelectModel;
     private ImageView checkmarkSelectModel;
     private Button btnSelectDataset;
-    private ImageView checkmarkSelectDataset;
     private Button btnStartTraining;
-    
+
     private Button btnShowHistory;
     private ImageView checkmarkStartTraining;
     private ProgressBar progressBar;
-    List<Integer> dimensions = List.of(10000);
-    private int BATCH_SIZE = 64;
-    private int NUM_BATCHES = 100;
+    public List<Integer> dimensions = List.of(28,28);
+    public int BATCH_SIZE = 64;
+    public int NUM_BATCHES = 100;
 
-    private int NUM_EPOCHS = 1;
+    public int NUM_EPOCHS = 1;
 
-    private ProgressBar downloadProgressBar;
+    public ProgressBar downloadProgressBar;
 
     private DrawerLayout drawerLayout;
+    public ViewPager2 viewPager;
+    public CardAdapter adapter;
 
     @SuppressLint("SetTextI18n")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-
+        currentConfig = new ModelConfig();
         initViews();
 
-        applyAnimations();
+        //applyAnimations();
 
-        btnSelectModel.setOnClickListener(v -> selectModel());
-        btnSelectDataset.setOnClickListener(v -> selectDataset());
         btnStartTraining.setOnClickListener(v -> startTrainingIfReady());
-        btnConfigurations.setOnClickListener(v -> showConfigurationsDialog());
         btnShowHistory.setOnClickListener(v -> { showHistory(); });
     }
 
-    private void showHistory() {
+    public void showHistory() {
         Intent intent = new Intent(MainActivity.this, HistoryActivity.class);
         startActivity(intent);
     }
 
     private void initViews(){
-        btnConfigurations = findViewById(R.id.btn_configurations);
-        checkmarkConfigurations = findViewById(R.id.checkmark_configurations);
-        btnSelectModel = findViewById(R.id.btn_select_model);
-        checkmarkSelectModel = findViewById(R.id.checkmark_model);
-        btnSelectDataset = findViewById(R.id.btn_select_dataset);
-        checkmarkSelectDataset = findViewById(R.id.checkmark_dataset);
-        btnStartTraining = findViewById(R.id.btn_start_training);
-        checkmarkStartTraining = findViewById(R.id.checkmark_training);
         tvStatus = findViewById(R.id.tv_status);
         progressBar = findViewById(R.id.progressBar);
         downloadProgressBar = findViewById(R.id.downloadProgressBar);
-        tvConfigurations = findViewById(R.id.tv_configurations);
         drawerLayout = findViewById(R.id.drawer_layout); // Ensure this matches your DrawerLayout ID
         ImageButton btnOpenHistory = findViewById(R.id.btn_open_history);
         btnShowHistory = findViewById(R.id.btn_history);
+        btnStartTraining = findViewById(R.id.btn_start_training);
+
+
+        viewPager = findViewById(R.id.viewPager);
+
+        // Sample data for the cards
+        DotsIndicator dotsIndicator = findViewById(R.id.dots_indicator);
+        adapter = new CardAdapter(viewPager, this,this, tvStatus);
+        viewPager.setAdapter(adapter);
+        dotsIndicator.setViewPager2(viewPager);
 
         // Set click listener to open the sidebar
         btnOpenHistory.setOnClickListener(new View.OnClickListener() {
@@ -150,101 +152,6 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private void selectDataset(){
-        // Download dataset from URL
-        downloadFile(featuresUrl, "Features", false, null);
-        downloadFile(labelsUrl, "Labels", false, null);
-    }
-
-    private void selectModel(){
-        // Download model from URL
-        modelFile = new File(getFilesDir(), "model.tflite");
-        downloadFile(modelUrl, "Model", true, modelFile);
-    }
-
-    private void showConfigurationsDialog() {
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle("Set Configuration");
-        LinearLayout layout = createConfigurationsLayout();
-        builder.setView(layout)
-                .setPositiveButton("OK", (dialog, which) -> {
-                    updateConfigurations(layout);
-                    checkmarkConfigurations.setVisibility(View.VISIBLE);
-                })
-                .setNegativeButton("Cancel", (dialog, which) -> dialog.cancel())
-                .show();
-    }
-
-    private LinearLayout createConfigurationsLayout() {
-        LinearLayout layout = new LinearLayout(this);
-        layout.setOrientation(LinearLayout.VERTICAL);
-        layout.setPadding(20, 20, 20, 20);
-
-        layout.addView(createLabel("Number of epochs:"));
-        layout.addView(createNumberInput(NUM_EPOCHS));
-
-        layout.addView(createLabel("Number of batches:"));
-        layout.addView(createNumberInput(NUM_BATCHES));
-
-        layout.addView(createLabel("Batch Size:"));
-        layout.addView(createNumberInput(BATCH_SIZE));
-
-        layout.addView(createLabel("Feature Dimensions:"));
-        layout.addView(createNumberInputList(dimensions));
-
-        return layout;
-    }
-
-    private TextView createLabel(String text) {
-        TextView label = new TextView(this);
-        label.setText(text);
-        label.setTextSize(18);
-        label.setTextColor(Color.WHITE);
-        label.setPadding(0, 10, 0, 5);
-        return label;
-    }
-
-    private EditText createNumberInput(int value) {
-        EditText input = new EditText(this);
-        input.setText(String.valueOf(value));
-        applyEditTextStyle(input);
-        return input;
-    }
-
-    private EditText createNumberInputList(List<Integer> values) {
-        EditText input = new EditText(this);
-        input.setText(values.stream().map(String::valueOf).collect(Collectors.joining(", ")));
-        applyEditTextStyle(input);
-        return input;
-    }
-
-    private void applyEditTextStyle(EditText editText) {
-        editText.setPadding(20, 15, 20, 15);
-        GradientDrawable background = new GradientDrawable();
-        background.setColor(Color.WHITE);
-        background.setCornerRadius(10);
-        background.setStroke(1, Color.GRAY);
-        editText.setBackground(background);
-        editText.setTextColor(Color.BLUE);
-    }
-
-    private void updateConfigurations(LinearLayout layout) {
-        NUM_EPOCHS = Integer.parseInt(((EditText) layout.getChildAt(1)).getText().toString());
-        NUM_BATCHES = Integer.parseInt(((EditText) layout.getChildAt(3)).getText().toString());
-        BATCH_SIZE = Integer.parseInt(((EditText) layout.getChildAt(5)).getText().toString());
-        dimensions = Arrays.stream(((EditText) layout.getChildAt(7)).getText().toString().split(","))
-                .map(Integer::parseInt).collect(Collectors.toList());
-        setConfigurationsTextView();
-    }
-
-    private void setConfigurationsTextView() {
-        String formattedText = "<b>Configuration Details</b><br>" +
-                "<font color='#4CAF50'>Epochs:</font> " + NUM_EPOCHS + "<br>" +
-                "<font color='#4CAF50'>Batches:</font> " + NUM_BATCHES + "<br>" +
-                "<font color='#4CAF50'>Batch Size:</font> " + BATCH_SIZE + "<br>" +
-                "<font color='#4CAF50'>Dimensions:</font> " + listToString(dimensions);
-        tvConfigurations.setText(Html.fromHtml(formattedText, Html.FROM_HTML_MODE_LEGACY));
-    }
 
 
     private void applyAnimations() {
@@ -258,110 +165,6 @@ public class MainActivity extends AppCompatActivity {
         btnSelectModel.startAnimation(slideUp);
         btnSelectDataset.startAnimation(slideUp);
         btnStartTraining.startAnimation(scaleUp);
-        setConfigurationsTextView();
-    }
-
-    private void downloadFile(String url, String fileType, boolean isModel, File saveFile) {
-        tvStatus.setText("Downloading " + fileType + "...");
-        downloadProgressBar.setVisibility(View.VISIBLE);
-        downloadProgressBar.setProgress(0);
-
-        OkHttpClient client = new OkHttpClient();
-        Request request = new Request.Builder().url(url).build();
-
-        client.newCall(request).enqueue(new Callback() {
-            @Override
-            public void onFailure(Call call, IOException e) {
-                runOnUiThread(() -> {
-                    tvStatus.setText(fileType + " Download Failed: " + e.getMessage());
-                    downloadProgressBar.setVisibility(View.GONE);
-                    Log.e(TAG, fileType + " download failed", e);
-                });
-            }
-
-            @Override
-            public void onResponse(Call call, Response response) throws IOException {
-                if (!response.isSuccessful()) {
-                    runOnUiThread(() -> {
-                        tvStatus.setText(fileType + " Download Failed: " + response.message());
-                        downloadProgressBar.setVisibility(View.GONE);
-                    });
-                    return;
-                }
-
-                long totalBytes = response.body().contentLength();
-                long downloadedBytes = 0;
-                byte[] buffer = new byte[80000];
-                ByteArrayOutputStream byteStream = new ByteArrayOutputStream();
-
-                try (BufferedInputStream inputStream = new BufferedInputStream(response.body().byteStream())) {
-                    int read;
-                    while ((read = inputStream.read(buffer, 0, buffer.length)) != -1) {
-                        byteStream.write(buffer, 0, read);
-                        downloadedBytes += read;
-
-                        Log.d("DownloadInfo", fileType + " Bytes read: " + downloadedBytes + "/" + totalBytes);
-
-                        // Update progress
-                        int progress = (int) ((downloadedBytes * 100) / totalBytes);
-                        runOnUiThread(() -> downloadProgressBar.setProgress(progress));
-                    }
-                    byteStream.flush();
-                    byte[] data = byteStream.toByteArray();
-
-                    // For model files, save to disk
-                    if (isModel && saveFile != null) {
-                        try (FileOutputStream fos = new FileOutputStream(saveFile)) {
-                            fos.write(data);
-                            fos.flush();
-                            runOnUiThread(() -> tvStatus.setText(fileType + " Downloaded"));
-                        } catch (IOException e) {
-                            runOnUiThread(() -> tvStatus.setText("Error saving " + fileType + ": " + e.getMessage()));
-                        }
-                    } else if (!isModel) {
-                        // For datasets, wrap into ByteBuffer
-                        ByteBuffer datasetBuffer = ByteBuffer.wrap(data);
-                        datasetBuffer.order(ByteOrder.nativeOrder());
-                        runOnUiThread(() -> tvStatus.setText(fileType + " Downloaded"));
-
-                        if (fileType.equals("Features")) {
-                            featuresBuffer = datasetBuffer.asFloatBuffer();
-                            Log.d("Size", fileType + " " + featuresBuffer.capacity());
-                        } else {
-                            labelsBuffer = datasetBuffer.asFloatBuffer();
-                            Log.d("Size", fileType + " " + labelsBuffer.capacity());
-                        }
-                    }
-                } catch (IOException e) {
-                    runOnUiThread(() -> {
-                        tvStatus.setText("Error reading " + fileType + ": " + e.getMessage());
-                    });
-                } finally {
-                    runOnUiThread(() -> {
-                        downloadProgressBar.setVisibility(View.GONE);
-                        if (isModel) {
-                            checkmarkSelectModel.setVisibility(View.VISIBLE);
-                        } else {
-                            checkmarkSelectDataset.setVisibility(View.VISIBLE);
-                        }
-                    });
-
-                }
-            }
-        });
-    }
-
-    private String listToString(List<Integer> numberList) {
-        return numberList.stream()
-                .map(String::valueOf)
-                .collect(Collectors.joining(","));
-    }
-
-    private List<Integer> stringToList(String numbers) {
-        return Arrays.stream(numbers.split(","))
-                .map(String::trim)
-                .map(Integer::parseInt)
-                .collect(Collectors.toList());
     }
 
     private double calculateEnergy(Long consumed_charge, int voltage){
@@ -370,6 +173,9 @@ public class MainActivity extends AppCompatActivity {
         return (float_charge/1e6) * (((double) voltage)/1e3) * 3600;
     }
 
+    public void setTvStatus(String text) {
+        this.tvStatus.setText(text);
+    }
 
     private void startTraining() {
         if (featuresBuffer == null || labelsBuffer == null) {
@@ -396,27 +202,27 @@ public class MainActivity extends AppCompatActivity {
                     tfliteInterpreter = new Interpreter(modelFile);  // Fallback to CPU
                 }
 
-                List<FloatBuffer> trainImageBatches = new ArrayList<>(NUM_BATCHES);
-                List<FloatBuffer> trainLabelBatches = new ArrayList<>(NUM_BATCHES);
+                List<FloatBuffer> trainImageBatches = new ArrayList<>(currentConfig.getBatches());
+                List<FloatBuffer> trainLabelBatches = new ArrayList<>(currentConfig.getBatches());
 
                 int FLATTENED_FEATURES_SIZE = 1;
-                for (int dimension : dimensions){
+                for (int dimension : TypeConverter.stringToList(currentConfig.getDimensions())){
                     FLATTENED_FEATURES_SIZE *= dimension;
                 }
 
-                int LABELS_SIZE = tfliteInterpreter.getOutputTensor(0).numBytes() / (4*BATCH_SIZE);
+                int LABELS_SIZE = tfliteInterpreter.getOutputTensor(0).numBytes() / (Float.BYTES*currentConfig.getBatchSize());
 
                 // Prepare training batches.
-                for (int i = 0; i < NUM_BATCHES; i++) {
+                for (int i = 0; i < currentConfig.getBatches(); i++) {
                     Log.d("I", "Counter: " + i);
-                    ByteBuffer  trainFeatures = ByteBuffer.allocateDirect(BATCH_SIZE * FLATTENED_FEATURES_SIZE * 4).order(ByteOrder.nativeOrder());
+                    ByteBuffer  trainFeatures = ByteBuffer.allocateDirect(currentConfig.getBatchSize() * FLATTENED_FEATURES_SIZE * 4).order(ByteOrder.nativeOrder());
                     FloatBuffer trainFeaturesFloat = trainFeatures.asFloatBuffer();
-                    ByteBuffer trainLabels = ByteBuffer.allocateDirect(BATCH_SIZE * LABELS_SIZE * 4).order(ByteOrder.nativeOrder());
+                    ByteBuffer trainLabels = ByteBuffer.allocateDirect(currentConfig.getBatchSize() * LABELS_SIZE * 4).order(ByteOrder.nativeOrder());
                     FloatBuffer trainLabelsFloat = trainLabels.asFloatBuffer();
 
                     // Slice the required portion from featuresBuffer for this batch
-                    int features_start = i * BATCH_SIZE * FLATTENED_FEATURES_SIZE;
-                    int features_end = features_start + BATCH_SIZE * FLATTENED_FEATURES_SIZE;
+                    int features_start = i * currentConfig.getBatchSize() * FLATTENED_FEATURES_SIZE;
+                    int features_end = features_start + currentConfig.getBatchSize() * FLATTENED_FEATURES_SIZE;
                     FloatBuffer featuresBatchSlice = featuresBuffer.duplicate();  // Duplicate to avoid modifying original buffer position
                     featuresBatchSlice.position(features_start);
                     featuresBatchSlice.limit(features_end);
@@ -426,8 +232,8 @@ public class MainActivity extends AppCompatActivity {
                     // Copy the sliced data to trainFeaturesFloat
                     trainFeaturesFloat.put(featuresBatchSlice);
 
-                    int labels_start = i * BATCH_SIZE * LABELS_SIZE;
-                    int labels_end = labels_start + BATCH_SIZE * LABELS_SIZE;
+                    int labels_start = i * currentConfig.getBatchSize() * LABELS_SIZE;
+                    int labels_end = labels_start + currentConfig.getBatchSize() * LABELS_SIZE;
                     FloatBuffer labelsBatchSlice = labelsBuffer.duplicate();  // Duplicate to avoid modifying original buffer position
                     labelsBatchSlice.position(labels_start);
                     labelsBatchSlice.limit(labels_end);
@@ -446,15 +252,15 @@ public class MainActivity extends AppCompatActivity {
                 }
 
                 // Run training for a few steps.
-                float[] losses = new float[NUM_EPOCHS];
+                float[] losses = new float[currentConfig.getEpochs()];
 
                 startTime = System.currentTimeMillis();
                 BatteryManager mBatteryManager = (BatteryManager) this.getSystemService(Context.BATTERY_SERVICE);
                 Long start_charge = mBatteryManager.getLongProperty(BatteryManager.BATTERY_PROPERTY_CHARGE_COUNTER);
 
-                for (int epoch = 0; epoch < NUM_EPOCHS; ++epoch) {
+                for (int epoch = 0; epoch < currentConfig.getEpochs(); ++epoch) {
                     FloatBuffer loss = FloatBuffer.allocate(4).put(1);
-                    for (int batchIdx = 0; batchIdx < NUM_BATCHES; ++batchIdx) {
+                    for (int batchIdx = 0; batchIdx < currentConfig.getBatches(); ++batchIdx) {
                         Map<String, Object> inputs = new HashMap<>();
                         inputs.put("x", trainImageBatches.get(batchIdx));
                         inputs.put("y", trainLabelBatches.get(batchIdx));
@@ -466,7 +272,7 @@ public class MainActivity extends AppCompatActivity {
                         tfliteInterpreter.runSignature(inputs, outputs, "train");
 
                         // Record the last loss.
-                        if (batchIdx == NUM_BATCHES - 1) losses[epoch] = loss.get(0);
+                        if (batchIdx == currentConfig.getBatches() - 1) losses[epoch] = loss.get(0);
                     }
 
                     System.out.println("Finished " + (epoch + 1) + " epochs, current loss: " + loss.get(0));
@@ -474,17 +280,17 @@ public class MainActivity extends AppCompatActivity {
 
                 IntentFilter filter = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
                 Intent batteryStatus = this.registerReceiver(null, filter);
-                int voltageMillivolts = batteryStatus.getIntExtra(BatteryManager.EXTRA_VOLTAGE, -1);
+                int voltageMilivolts = batteryStatus.getIntExtra(BatteryManager.EXTRA_VOLTAGE, -1);
 
                 Long finish_charge = mBatteryManager.getLongProperty(BatteryManager.BATTERY_PROPERTY_CHARGE_COUNTER);
 
                 Long consumed_charge = start_charge - finish_charge;
 
-                Log.d("ENERGY", "Millivolts " + (double) voltageMillivolts);
+                Log.d("ENERGY", "Milivolts " + (double) voltageMilivolts);
 
                 Log.d("ENERGY", "Microampere hour " + consumed_charge);
 
-                double energy = calculateEnergy(consumed_charge, voltageMillivolts);
+                double energy = calculateEnergy(consumed_charge, voltageMilivolts);
 
                 Log.d("ENERGY", "Joules " + energy);
 
@@ -495,15 +301,14 @@ public class MainActivity extends AppCompatActivity {
                 runOnUiThread(() -> {
 
                     tvStatus.setText("Training Completed. Time: " + trainingTime + "ms");
-                    checkmarkStartTraining.setVisibility(View.VISIBLE);
                     progressBar.setVisibility(View.GONE);
+                    adapter.updateLastTrainingInfo(getLastTrainingInfo());
                 });
 
             } catch (Exception e) {
                 Log.e(TAG, "Error during training", e);
                 runOnUiThread(() -> {
                     tvStatus.setText("Error during training");
-                    checkmarkStartTraining.setVisibility(View.VISIBLE);
                     progressBar.setVisibility(View.GONE);
                 });
             }
@@ -511,21 +316,31 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void saveToHistory(long trainingTime, double energy) {
-        ModelConfig config = new ModelConfig();
-        config.setBatches(NUM_BATCHES);
-        config.setEpochs(NUM_EPOCHS);
-        config.setDimensions(dimensions.toString());
-        config.setBatchSize(BATCH_SIZE);
-        config.setTime((int) trainingTime);
-        config.setEnergy(energy);
+        currentConfig.setTime((int) trainingTime);
+        currentConfig.setEnergy(energy);
         HistoryManager historyManager = new HistoryManager(this);
         List<ModelConfig> configs = historyManager.readJsonFileToList();
         if (configs == null) {
             configs = new ArrayList<>();
         }
-        configs.add(config);
+        configs.add(0, currentConfig);
         historyManager.saveListToJsonFile(configs);
         historyManager.printJsonFileContent();
+    }
+
+    public String getLastTrainingInfo() {
+        HistoryManager historyManager = new HistoryManager(this);
+        List<ModelConfig> configs = historyManager.readJsonFileToList();
+        if (configs == null || configs.isEmpty()) {
+            return "";
+        }
+        ModelConfig config = configs.get(0);
+        return"<font color='#4CAF50'>Epochs:</font> " + config.getEpochs() + "<br>" +
+                "<font color='#4CAF50'>Batches:</font> " + config.getBatches() + "<br>" +
+                "<font color='#4CAF50'>Batch Size:</font> " +config.getBatchSize() + "<br>" +
+                "<font color='#4CAF50'>Dimensions:</font> " + config.getDimensions() + "<br>" +
+                "<font color='#4CAF50'>Time:</font> " + config.getTime() + "<br>" +
+                "<font color='#4CAF50'>Energy:</font> " + config.getEnergy();
     }
 
 }
