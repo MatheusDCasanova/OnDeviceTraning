@@ -1,10 +1,6 @@
 package com.example.myapplication;
 
-import java.io.File;
-import java.lang.reflect.Type;
-import java.nio.FloatBuffer;
 import java.util.List;
-import com.example.myapplication.TypeConverter;
 
 public class ModelConfig {
     private int epochs=1;
@@ -22,8 +18,11 @@ public class ModelConfig {
 
     private double energy;
 
-    // Getters and Setters
+    private double sampleEnergy;
 
+    private double sampleTime;
+
+    // Getters and Setters
 
     public int getEpochs() {
         return epochs;
@@ -95,6 +94,22 @@ public class ModelConfig {
 
     public void setEnergy(double energy) {
         this.energy = energy;
+    }
+
+    public double getSampleEnergy() {
+        return sampleEnergy;
+    }
+
+    public void setSampleEnergy(double sampleEnergy) {
+        this.sampleEnergy = sampleEnergy;
+    }
+
+    public double getSampleTime() {
+        return sampleTime;
+    }
+
+    public void setSampleTime(double sampleTime) {
+        this.sampleTime = sampleTime;
     }
 
 }

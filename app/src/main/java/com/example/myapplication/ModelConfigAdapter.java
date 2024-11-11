@@ -36,7 +36,9 @@ public class ModelConfigAdapter extends RecyclerView.Adapter<ModelConfigAdapter.
         holder.datasetLinkText.setText("Features Link: " + modelConfig.getFeaturesLink());
         holder.datasetLinkText.setText("Labels Link: " + modelConfig.getLabelsLink());
         holder.timeText.setText("Time: " + modelConfig.getTime() + " seconds");
-        holder.energyText.setText("Energy(Joules): " + modelConfig.getEnergy() + "");
+        holder.sampleTimeText.setText("Time per sample: " + String.format("%.3f",modelConfig.getSampleTime()) + " seconds");
+        holder.energyText.setText("Energy: " + String.format("%.4f",modelConfig.getEnergy()) + " J");
+        holder.sampleEnergyText.setText("Energy per sample: " + String.format("%.6f",modelConfig.getSampleEnergy()) + " J");
     }
 
     @Override
@@ -52,7 +54,11 @@ public class ModelConfigAdapter extends RecyclerView.Adapter<ModelConfigAdapter.
         TextView modelLinkText;
         TextView datasetLinkText;
         TextView timeText;
+
+        TextView sampleTimeText;
         TextView energyText;
+
+        TextView sampleEnergyText;
 
         ViewHolder(View itemView) {
             super(itemView);
@@ -63,7 +69,9 @@ public class ModelConfigAdapter extends RecyclerView.Adapter<ModelConfigAdapter.
             modelLinkText = itemView.findViewById(R.id.model_link_text);
             datasetLinkText = itemView.findViewById(R.id.dataset_link_text);
             timeText = itemView.findViewById(R.id.time_text);
+            sampleTimeText = itemView.findViewById(R.id.sample_time_text);
             energyText = itemView.findViewById(R.id.energy_text);
+            sampleEnergyText = itemView.findViewById(R.id.sample_energy_text);
         }
     }
 }

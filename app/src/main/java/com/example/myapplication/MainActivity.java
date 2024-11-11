@@ -296,7 +296,13 @@ public class MainActivity extends AppCompatActivity {
 
                 long trainingTime = System.currentTimeMillis() - startTime;
 
-                saveToHistory(trainingTime, energy);
+                int numberSamples = (currentConfig.getBatches() * currentConfig.getBatchSize());
+
+                double sampleEnergy = energy / (double) numberSamples;
+
+                double sampleTime = (double) trainingTime / (double) numberSamples;
+
+                saveToHistory(trainingTime, energy, sampleEnergy, sampleTime);
 
                 runOnUiThread(() -> {
 
@@ -315,9 +321,12 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-    private void saveToHistory(long trainingTime, double energy) {
+    private void saveToHistory(long trainingTime, double energy, double sampleEnergy, double sampleTime) {
         currentConfig.setTime((int) trainingTime);
         currentConfig.setEnergy(energy);
+        currentConfig.setSampleEnergy(sampleEnergy);
+        currentConfig.setSampleTime(sampleTime);
+
         HistoryManager historyManager = new HistoryManager(this);
         List<ModelConfig> configs = historyManager.readJsonFileToList();
         if (configs == null) {
@@ -335,12 +344,16 @@ public class MainActivity extends AppCompatActivity {
             return "";
         }
         ModelConfig config = configs.get(0);
+
         return"<font color='#4CAF50'>Epochs:</font> " + config.getEpochs() + "<br>" +
                 "<font color='#4CAF50'>Batches:</font> " + config.getBatches() + "<br>" +
                 "<font color='#4CAF50'>Batch Size:</font> " +config.getBatchSize() + "<br>" +
                 "<font color='#4CAF50'>Dimensions:</font> " + config.getDimensions() + "<br>" +
-                "<font color='#4CAF50'>Time:</font> " + config.getTime() + "<br>" +
-                "<font color='#4CAF50'>Energy:</font> " + config.getEnergy();
+                "<font color='#4CAF50'>Time:</font> " + config.getTime() + " ms<br>" +
+                "<font color='#4CAF50'>Time per sample:</font> " + String.format("%.3f",config.getSampleTime()) + " ms<br>" +
+                "<font color='#4CAF50'>Total Energy:</font> " + String.format("%.4f",config.getEnergy()) + " J<br>" +
+                "<font color='#4CAF50'>Energy per sample:</font> " + String.format("%.6f",config.getSampleEnergy()) + " J";
+
     }
 
 }
