@@ -1,4 +1,4 @@
-package com.example.myapplication;
+package com.example.ondevicetraining;
 import android.util.Log;
 
 import com.google.firebase.database.DatabaseReference;

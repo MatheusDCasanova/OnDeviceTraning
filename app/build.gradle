@@ -1,13 +1,14 @@
 plugins {
     id 'com.android.application'
+    id 'com.google.gms.google-services'
 }
 
 android {
-    namespace 'com.example.myapplication'
+    namespace 'com.example.ondevicetraining'
     compileSdk 33
 
     defaultConfig {
-        applicationId "com.example.myapplication"
+        applicationId "com.example.ondevicetraining"
         minSdk 24
         targetSdk 33
         versionCode 1
@@ -44,5 +45,12 @@ dependencies {
     implementation "org.tensorflow:tensorflow-lite-select-tf-ops:2.13.0"
     implementation "org.tensorflow:tensorflow-lite-gpu:2.13.0"
     implementation 'com.squareup.okhttp3:okhttp:4.9.3'
-
+    // Import the BoM for the Firebase platform
+    implementation(platform("com.google.firebase:firebase-bom:32.3.1"))
+    // Add the dependency for the Realtime Database library
+    // When using the BoM, you don't specify versions in Firebase library dependencies
+    implementation("com.google.firebase:firebase-database")
+    implementation 'com.google.firebase:firebase-database:21.0.0' // Use the latest version
 }
+
+apply plugin: 'com.google.gms.google-services'

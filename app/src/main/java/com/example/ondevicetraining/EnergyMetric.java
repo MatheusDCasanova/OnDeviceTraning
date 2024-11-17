@@ -1,4 +1,4 @@
-package com.example.myapplication;
+package com.example.ondevicetraining;
 
 public class EnergyMetric {
     public int epochs;

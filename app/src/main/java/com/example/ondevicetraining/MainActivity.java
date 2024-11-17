@@ -1,53 +1,36 @@
-package com.example.myapplication;
+package com.example.ondevicetraining;
 
 import android.annotation.SuppressLint;
 import android.content.Intent;
-import android.graphics.Color;
-import android.graphics.drawable.GradientDrawable;
 import android.os.Bundle;
-import android.text.Html;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
-import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ImageView;
-import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.os.BatteryManager;
 import android.content.Context;
 
-import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.view.GravityCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.viewpager2.widget.ViewPager2;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.stream.Collectors;
 
-import java.io.IOException;
+import java.util.List;
+
 import java.nio.FloatBuffer;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import okhttp3.Call;
-import okhttp3.Callback;
-import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import okhttp3.Response;
-
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.widget.ProgressBar;
 
-import java.io.ByteArrayOutputStream;
-import java.io.BufferedInputStream;
 import java.io.File;
-import java.io.FileOutputStream;
 
 import org.tensorflow.lite.Interpreter;
 
@@ -58,9 +41,8 @@ import java.util.ArrayList;
 
 import android.content.IntentFilter;
 
-import com.google.android.material.tabs.TabLayout;
-import com.google.android.material.tabs.TabLayoutMediator;
 import com.tbuonomo.viewpagerdotsindicator.DotsIndicator;
+import com.google.firebase.FirebaseApp;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -71,7 +53,6 @@ public class MainActivity extends AppCompatActivity {
     public ModelConfig currentConfig;
     public FloatBuffer featuresBuffer;
     public FloatBuffer labelsBuffer;
-    private String configsString;
     public TextView tvStatus;
 
     private Button btnSelectModel;
@@ -98,6 +79,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        FirebaseApp.initializeApp(this);
         setContentView(R.layout.activity_main);
         currentConfig = new ModelConfig();
         initViews();
@@ -303,6 +285,12 @@ public class MainActivity extends AppCompatActivity {
                 double sampleTime = (double) trainingTime / (double) numberSamples;
 
                 saveToHistory(trainingTime, energy, sampleEnergy, sampleTime);
+
+                // Save to database
+                FirebaseHelper database = new FirebaseHelper();
+                EnergyMetric metric = new EnergyMetric(energy, sampleEnergy, sampleTime, currentConfig.getEpochs(), currentConfig.getBatches(), currentConfig.getBatchSize(), currentConfig.getModelLink(), currentConfig.getLabelsLink(), currentConfig.getFeaturesLink(), trainingTime, currentConfig.getModelSize());
+
+                database.sendMetrics(metric);
 
                 runOnUiThread(() -> {
 

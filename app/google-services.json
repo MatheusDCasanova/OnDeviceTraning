@@ -8,9 +8,9 @@
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:947324845496:android:027734bc600ae0b2b8234d",
+        "mobilesdk_app_id": "1:947324845496:android:728573844aa623c5b8234d",
         "android_client_info": {
-          "package_name": "com.unicamp.ondevicetraining"
+          "package_name": "com.example.ondevicetraining"
         }
       },
       "oauth_client": [],

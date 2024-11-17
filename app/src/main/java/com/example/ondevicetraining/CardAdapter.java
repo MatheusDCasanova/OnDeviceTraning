@@ -1,4 +1,4 @@
-package com.example.myapplication;// CardAdapter.java
+package com.example.ondevicetraining;// CardAdapter.java
 
 import android.content.Context;
 import android.graphics.Color;
