@@ -58,16 +58,10 @@ public class MainActivity extends AppCompatActivity {
     private Button btnSelectModel;
     private ImageView checkmarkSelectModel;
     private Button btnSelectDataset;
-    private Button btnStartTraining;
-
     private Button btnShowHistory;
+
     private ImageView checkmarkStartTraining;
     private ProgressBar progressBar;
-    public List<Integer> dimensions = List.of(28,28);
-    public int BATCH_SIZE = 64;
-    public int NUM_BATCHES = 100;
-
-    public int NUM_EPOCHS = 1;
 
     public ProgressBar downloadProgressBar;
 
@@ -86,8 +80,7 @@ public class MainActivity extends AppCompatActivity {
 
         //applyAnimations();
 
-        btnStartTraining.setOnClickListener(v -> startTrainingIfReady());
-        btnShowHistory.setOnClickListener(v -> { showHistory(); });
+        btnShowHistory.setOnClickListener(v -> showHistory());
     }
 
     public void showHistory() {
@@ -101,8 +94,7 @@ public class MainActivity extends AppCompatActivity {
         downloadProgressBar = findViewById(R.id.downloadProgressBar);
         drawerLayout = findViewById(R.id.drawer_layout); // Ensure this matches your DrawerLayout ID
         ImageButton btnOpenHistory = findViewById(R.id.btn_open_history);
-        btnShowHistory = findViewById(R.id.btn_history);
-        btnStartTraining = findViewById(R.id.btn_start_training);
+        btnShowHistory = findViewById(R.id.btn_show_history);
 
 
         viewPager = findViewById(R.id.viewPager);
@@ -126,7 +118,7 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-    private void startTrainingIfReady() {
+    public void startTrainingIfReady() {
         if (modelFile != null && featuresBuffer != null && labelsBuffer != null) {
             startTraining();
         } else {
@@ -146,7 +138,7 @@ public class MainActivity extends AppCompatActivity {
         tvStatus.startAnimation(fadeIn);
         btnSelectModel.startAnimation(slideUp);
         btnSelectDataset.startAnimation(slideUp);
-        btnStartTraining.startAnimation(scaleUp);
+        btnShowHistory.startAnimation(scaleUp);
     }
 
     private double calculateEnergy(Long consumed_charge, int voltage){
