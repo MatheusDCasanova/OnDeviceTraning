@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "947324845496",
+    "firebase_url": "https://ondevicetraining-dc6d0-default-rtdb.firebaseio.com",
+    "project_id": "ondevicetraining-dc6d0",
+    "storage_bucket": "ondevicetraining-dc6d0.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:947324845496:android:027734bc600ae0b2b8234d",
+        "android_client_info": {
+          "package_name": "com.unicamp.ondevicetraining"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCwwOLJg4H1bTlYUKwoS69rbE6uUZCPFr0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
