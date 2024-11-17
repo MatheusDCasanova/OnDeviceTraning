@@ -69,6 +69,7 @@ public class FileDownloader {
 
                 try (BufferedInputStream inputStream = new BufferedInputStream(response.body().byteStream())) {
                     int read;
+                    long startTime = System.currentTimeMillis();
                     while ((read = inputStream.read(buffer, 0, buffer.length)) != -1) {
                         byteStream.write(buffer, 0, read);
                         downloadedBytes += read;
@@ -79,15 +80,20 @@ public class FileDownloader {
                         int progress = (int) ((downloadedBytes * 100) / totalBytes);
                         mainActivity.runOnUiThread(() -> mainActivity.downloadProgressBar.setProgress(progress));
                     }
+                    long downloadTime = System.currentTimeMillis() - startTime;
                     byteStream.flush();
                     byte[] data = byteStream.toByteArray();
 
                     // For model files, save to disk
                     if (isModel && saveFile != null) {
+                        mainActivity.runOnUiThread(()->mainActivity.adapter.changeModelSize(data.length));
+
+
                         try (FileOutputStream fos = new FileOutputStream(saveFile)) {
                             fos.write(data);
                             fos.flush();
-                            mainActivity.runOnUiThread(() -> mainActivity.setTvStatus(fileType + " Downloaded"));
+                            mainActivity.runOnUiThread(() -> mainActivity.setTvStatus(fileType + " Downloaded in " + downloadTime + "ms\nsize: "+
+                                    data.length + " Bytes"));
                         } catch (IOException e) {
                             mainActivity.runOnUiThread(() -> mainActivity.setTvStatus("Error saving " + fileType + ": " + e.getMessage()));
                         }
@@ -95,7 +101,7 @@ public class FileDownloader {
                         // For datasets, wrap into ByteBuffer
                         ByteBuffer datasetBuffer = ByteBuffer.wrap(data);
                         datasetBuffer.order(ByteOrder.nativeOrder());
-                        mainActivity.runOnUiThread(() -> mainActivity.setTvStatus(fileType + " Downloaded"));
+                        mainActivity.runOnUiThread(() -> mainActivity.setTvStatus(fileType + " Downloaded in " + downloadTime + "ms" ));
 
                         if (replicateSingleFeature) {
                             int DATA_SIZE = datasetBuffer.capacity();
@@ -128,6 +134,7 @@ public class FileDownloader {
                         mainActivity.setTvStatus("Error reading " + fileType + ": " + e.getMessage());
                     });
                 } finally {
+
                     mainActivity.runOnUiThread(() -> {
                         mainActivity.downloadProgressBar.setVisibility(View.GONE);
                     });

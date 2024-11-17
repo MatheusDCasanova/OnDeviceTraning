@@ -11,6 +11,7 @@ public class ModelConfig {
     private String labelsLink="https://github.com/MatheusDCasanova/OnDeviceTraning/raw/refs/heads/master/mnist_labels.bin";
     private String featuresLink="https://github.com/MatheusDCasanova/OnDeviceTraning/raw/refs/heads/master/mnist_feats.bin";
     private int time;
+    private int modelSize;
 
     public ModelConfig() {
         // Default constructor
@@ -111,5 +112,9 @@ public class ModelConfig {
     public void setSampleTime(double sampleTime) {
         this.sampleTime = sampleTime;
     }
+
+    public int getModelSize() {return this.modelSize;}
+
+    public void setModelSize(int modelSize) {this.modelSize = modelSize;}
 
 }

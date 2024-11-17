@@ -55,6 +55,7 @@ public class CardAdapter extends RecyclerView.Adapter<CardAdapter.CardViewHolder
         return new CardViewHolder(view);
     }
 
+
     @Override
     public void onBindViewHolder(@NonNull CardViewHolder holder, int position) {
         holder.titleTextView.setText(titles.get(position));
@@ -70,7 +71,7 @@ public class CardAdapter extends RecyclerView.Adapter<CardAdapter.CardViewHolder
                 });
                 break;
             case 1:
-                holder.contentTextView.setText(Html.fromHtml("<a href=" + mainActivity.currentConfig.getModelLink() + ">model</a>\n", Html.FROM_HTML_MODE_LEGACY));
+                setModelTextView(holder);
                 holder.nextButton.setOnClickListener(v -> {
                     showModelDialog(holder);
                 });
@@ -202,12 +203,12 @@ public class CardAdapter extends RecyclerView.Adapter<CardAdapter.CardViewHolder
                 .setNegativeButton("Cancel", (dialog, which) -> dialog.cancel());
         AlertDialog dialog = builder.create();
         dialog.show();
-        setModelTextView(holder);
         applyButtonStyling(dialog);
     }
 
     private void setModelTextView(CardViewHolder holder) {
-        String formattedText = "<a href=" +mainActivity.currentConfig.getModelLink()+ ">model</a>\n";
+        String formattedText = "Model URL: <a href=" +mainActivity.currentConfig.getModelLink()+ ">model</a><br>"
+                + "Model Size (Bytes): " + mainActivity.currentConfig.getModelSize();
         holder.contentTextView.setMovementMethod(LinkMovementMethod.getInstance());
         holder.contentTextView.setText(Html.fromHtml(formattedText, Html.FROM_HTML_MODE_LEGACY));
     }
@@ -221,6 +222,11 @@ public class CardAdapter extends RecyclerView.Adapter<CardAdapter.CardViewHolder
         layout.addView(createStringInput(mainActivity.currentConfig.getModelLink()));
 
         return layout;
+    }
+
+    public void changeModelSize(int modelSize) {
+        mainActivity.currentConfig.setModelSize(modelSize);
+        notifyDataSetChanged();
     }
 
     private void updateModel(LinearLayout layout) {
