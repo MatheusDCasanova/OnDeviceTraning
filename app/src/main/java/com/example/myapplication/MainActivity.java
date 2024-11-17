@@ -352,8 +352,8 @@ public class MainActivity extends AppCompatActivity {
                 "<font color='#4CAF50'>Time:</font> " + config.getTime() + " ms<br>" +
                 "<font color='#4CAF50'>Time per sample:</font> " + String.format("%.3f",config.getSampleTime()) + " ms<br>" +
                 "<font color='#4CAF50'>Total Energy:</font> " + String.format("%.4f",config.getEnergy()) + " J<br>" +
-                "<font color='#4CAF50'>Energy per sample:</font> " + String.format("%.6f",config.getSampleEnergy()) + " J"+
-                "<font color='#4CAF50'>Model Size:</font>" + String.format("%.6f",config.getModelSize()) + " Bytes";
+                "<font color='#4CAF50'>Energy per sample:</font> " + String.format("%.6f",config.getSampleEnergy()) + " J<br>"+
+                "<font color='#4CAF50'>Model Size:</font>" + String.format("%d",config.getModelSize()) + " Bytes";
 
     }
 
