@@ -41,7 +41,7 @@ This project uses the following dependencies:
 For using this application, it is expected that the user has already created binary versions of the TensorFlow Lite model as well as the dataset.
 For this, a support repository was created: In [flower-simulation](https://github.com/PFG-Federated-Learning/flower-simulation), related code and documentation
 can be found on how to transform your own models and datasets into binary files.
-These files should then be uploaded to a source that makes the model accessible via URL, such as a github repository or a google drive.
+These files should then be uploaded to a source that makes the model accessible via URL, such as a Github repository or a Google Drive.
 
 ## Changing Firebase Integration
 
@@ -67,7 +67,3 @@ These files should then be uploaded to a source that makes the model accessible 
 ## Contributing
 
 Contributions are welcome! Please feel free to submit pull requests or open issues.
-
-## License
-
-This project is licensed under the [MIT License](LICENSE).
