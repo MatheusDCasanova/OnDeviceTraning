@@ -20,7 +20,7 @@ The app covers data loading, batching, training loop execution, and saving train
 
 ## Getting Started
 
-1. **Clone the repository:**
+1. **Clone the repository**
 
 2. **Import into Android Studio:**
    Open Android Studio and import the project from the cloned directory.
