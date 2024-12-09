@@ -35,9 +35,9 @@ public class CardAdapter extends RecyclerView.Adapter<CardAdapter.CardViewHolder
     private String configsString = "";
     private boolean replicateSingleFeature = false;
 
-    private List<String> titles = Arrays.asList("Configurations", "Model", "Dataset", "Last Training info");
-    private List<String> contents = Arrays.asList("Content for card 1", "Content for card 2", "no info", "no info");
-    private List<String> buttonNames = Arrays.asList("set Configurations", "set Model", "set Dataset", "show History");
+    private List<String> titles = Arrays.asList("Configurations", "Model", "Dataset", "Training", "Last Training info");
+    private List<String> contents = Arrays.asList("set training config", "set model download link", "set dataset download link", "Run training", "Info from last training");
+    private List<String> buttonNames = Arrays.asList("set Configurations", "set Model", "set Dataset", "start Training", "show History");
 
     public FileDownloader fileDownloader;
 
@@ -87,6 +87,11 @@ public class CardAdapter extends RecyclerView.Adapter<CardAdapter.CardViewHolder
                 });
                 break;
             case 3:
+                holder.nextButton.setOnClickListener(v -> {
+                    this.mainActivity.startTrainingIfReady();
+                });
+                break;
+            case 4:
                 lastTrainingInfo = this.mainActivity.getLastTrainingInfo();
                 holder.contentTextView.setText(Html.fromHtml(lastTrainingInfo, Html.FROM_HTML_MODE_LEGACY));
                 holder.nextButton.setOnClickListener(v -> {
