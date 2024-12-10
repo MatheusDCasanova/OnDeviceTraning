@@ -28,9 +28,9 @@ public class CardAdapter extends RecyclerView.Adapter<CardAdapter.CardViewHolder
     private MainActivity mainActivity;
     private final Context context;
     private ViewPager2 viewPager; // Reference to ViewPager2
-    private String modelUrl = "https://github.com/MatheusDCasanova/OnDeviceTraning/raw/refs/heads/master/model_mnist_fixed_batch_size.tflite";
-    private String featuresUrl = "https://github.com/MatheusDCasanova/OnDeviceTraning/raw/refs/heads/master/mnist_feats.bin";
-    private String labelsUrl= "https://github.com/MatheusDCasanova/OnDeviceTraning/raw/refs/heads/master/mnist_labels.bin";
+    private String modelUrl = "https://link_to_model/model.tflite";
+    private String featuresUrl = "https://link_to_features/features.bin";
+    private String labelsUrl= "https://link_to_model/labels.bin";
     private String lastTrainingInfo = "";
     private String configsString = "";
     private boolean replicateSingleFeature = false;

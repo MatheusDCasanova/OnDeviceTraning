@@ -7,9 +7,9 @@ public class ModelConfig {
     private int batches=100;
     private int batchSize=64;
     private String dimensions = TypeConverter.listToString(List.of(28,28));
-    private String modelLink="https://github.com/MatheusDCasanova/OnDeviceTraning/raw/refs/heads/master/model_mnist_fixed_batch_size.tflite";
-    private String labelsLink="https://github.com/MatheusDCasanova/OnDeviceTraning/raw/refs/heads/master/mnist_labels.bin";
-    private String featuresLink="https://github.com/MatheusDCasanova/OnDeviceTraning/raw/refs/heads/master/mnist_feats.bin";
+    private String modelLink="https://link_to_model/model.tflite";
+    private String labelsLink="https://link_to_model/labels.bin";
+    private String featuresLink="https://link_to_features/features.bin";
     private int time;
     private int modelSize;
 
